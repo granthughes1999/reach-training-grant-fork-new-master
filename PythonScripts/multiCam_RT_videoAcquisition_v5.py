@@ -1385,6 +1385,13 @@ class MainFrame(wx.Frame):
                     # -- Added single line bellow, trying to get stimROI to send TTL
                     self._stim_armed = True   # New Code
                     
+                    # 9-29-2025, New Code gate stim arming by 20-trial blocks of Tone-2 successes
+                    block_size = 5
+                    block_index = (self.reach_number - 1) // block_size
+                    stim_allowed = (block_index % 2 == 1)
+
+                    self._stim_armed = stim_allowed
+                    
                     # Only log during active recording
                     if self.rec.GetValue():
                         self.trial_delays.append(self.curr_trial_delay_ms)
@@ -1418,7 +1425,11 @@ class MainFrame(wx.Frame):
                     self.pellet_timing = time.time()
                     self.delivery_delay = time.time()
                     if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
-                        self.stim_status.value = 1
+                        #self.stim_status.value = 1
+                        if stim_allowed:
+                            self.stim_status.value = 1
+                        else:
+                            self.stim_status.value = 0
                     #print('revealing pellet')
                     
             elif self.pellet_status == 3: # Test whether to get new pellet
@@ -1622,6 +1633,13 @@ class MainFrame(wx.Frame):
 #--------- Working on getting a StimROI TTL to send an actual TTL
 # Fast StimROI trigger on the stim camera's own frames   
     def vidPlayer(self, event):
+        
+        #  9-29-2025 New Code inside vidPlayer
+        
+        block_size = 5
+        block_index = (self.reach_number - 1) // block_size
+        stim_allowed = (block_index % 2 == 1)
+
         # Keep delivery style in sync
         if self.user_cfg['deliveryStyle'] != self.del_style.value:
             self.user_cfg['deliveryStyle'] = self.del_style.value
@@ -1662,8 +1680,9 @@ class MainFrame(wx.Frame):
                 now = time.perf_counter()
                 last = getattr(self, "_stim_last_fire", 0.0)
                 refractory = 0.10
-    
-                if getattr(self, "_stim_armed", False) and (stim_val >= thr) and (now - last >= refractory):
+                
+                # 9-29-2025, New Code: Added and stim_allowed to line below
+                if getattr(self, "_stim_armed", False) and stim_allowed and (stim_val >= thr) and (now - last >= refractory):
                     if hasattr(self, "_fire_stim_fast"):
                         self._fire_stim_fast("roi")
                     else:
