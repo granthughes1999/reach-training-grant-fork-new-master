@@ -1,0 +1,14 @@
+# Required Anaconda Environments
+
+## Options
+- dlc env can run the video explorer, curator, and reach finding scripts.
+- data_aq env is need to run video acquisition.
+  
+## Creation
+  Enviroments can be created in 2 ways:
+ 1. Load anaconda navigator, import the .yaml file, and name appropriately
+ 2. Create environment from anaconda terminal
+    * conda create -n 'env name' python=3.8
+    * conda activate 'env name'
+    * navigate to Conda-env directory
+    * pip install ____-requirements.txt

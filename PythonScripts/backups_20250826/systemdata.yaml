@@ -1,0 +1,71 @@
+# Camera reference (enter serial numbers for each)
+cam1:
+  serial: 22234357
+  ismaster: true
+  crop:
+  - 36
+  - 300
+  - 7
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: sideCam
+cam2:
+  serial: 23199872
+  ismaster: false
+  crop:
+  - 31
+  - 300
+  - 27
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: frontCam
+cam3:
+  serial: 23199912
+  ismaster: true
+  crop:
+  - 42
+  - 300
+  - 49
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: stimCam
+
+# User information
+unitRef: christie2P
+raw_data_dir: C:\Users\Public\Documents\RawDataLocal
+interim_data_dir: D:\CompressedDataLocal
+compressed_data_dir: Z:\SOM\PHYS\ChristieLab\Data\ReachingData\CompressedData
+COM: 5
+
+# Stim ROI
+stimAxes: cam3
+stimXWYH:
+- 178
+- 8
+- 50
+- 75
+stimRateX: 6
+
+# Pellet and ROI
+axesRef: cam1
+pelletXY:
+- 294
+- 92
+roiXWYH:
+- 235
+- 12
+- 79
+- 60
+shiftFactor: 10
+
+handThreshold: 20
+pelletThreshold: 100
+stimulusThreshold: 3000
+
+

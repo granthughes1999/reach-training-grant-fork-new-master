@@ -1,0 +1,64 @@
+# Curation settings
+user name: your name
+session list:
+- 20240215_christie2P_session013
+- 20231222_christie2P_session002
+- 20240116_christie2P_session001
+- 20240130_christie2P_session002
+- 20240213_christie2P_session004
+- 20240226_christie2P_session002
+- 20240304_christie2P_session007
+- 20240313_christie2P_session010
+- 20230821_christie2P_session005
+- 20230815_christie2P_session001
+- 20230815_christie2P_session003
+- 20230815_christie2P_session009
+- 20230818_christie2P_session005
+- 20230818_christie2P_session008
+- 20230822_christie2P_session006
+- 20230822_christie2P_session010
+- 20230929_christie2P_session001
+- 20230912_christie2P_session010
+
+behaviors (add/remove/change):
+- grabbed
+- missed
+- dropped
+- stalled
+- none
+
+events (only add):
+- reachInit
+- reachMax
+- reachEnd
+- stim
+
+results directory: C:\Users\reynoben\Documents\Curators\test
+raw data directory: Z:\PHYS\ChristieLab\Data\MSP_Z\Reach_Training
+
+# DLC settings used
+frontCrop:
+- 115
+- 200
+- 70
+- 200
+sideCrop:
+- 160
+- 200
+- 70
+- 200
+topCrop:
+- 160
+- 200
+- 50
+- 200
+bodyparts:
+- SdH_Flat
+- SdH_Spread
+- SdH_Grab
+- FtH_Reach
+- FtH_Grasp
+- Pellet
+- Tongue
+- Mouth
+

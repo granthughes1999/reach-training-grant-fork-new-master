@@ -1,0 +1,60 @@
+    # Project definitions (do not edit)
+Task: Reach2P
+scorer: christie
+date: Dec5
+multianimalproject:
+identity:
+
+    # Project path (change when moving around)
+project_path: C:\Users\reynoben\Documents\Reach2P-christie-2023-12-05
+
+    # Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  ? \\data.ucdenver.pvt\dept\SOM\PHYS\ChristieLab\Data\MSP_Z\Reach_Training\20230929\christie2P\session001\20230929_christie2P_session001_frontCam-0000_264.mp4
+  : crop: 0, 300, 0, 200
+  ? \\data.ucdenver.pvt\dept\SOM\PHYS\ChristieLab\Data\MSP_Z\Reach_Training\20230929\christie2P\session001\20230929_christie2P_session001_sideCam-0000_264.mp4
+  : crop: 0, 300, 0, 200
+
+bodyparts:
+- SdH_Flat
+- SdH_Spread
+- SdH_Grab
+- FtH_Reach
+- FtH_Grasp
+- Pellet
+- Tongue
+- Mouth
+start: 0
+stop: 1
+numframes2pick: 20
+
+    # Plotting configuration
+skeleton:
+skeleton_color:
+pcutoff: 0.1
+dotsize: 8
+alphavalue: 0.7
+colormap: jet
+
+    # Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 1
+default_net_type: resnet_50
+default_augmenter: default
+snapshotindex: -1
+batch_size: 15
+
+    # Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+    #if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+    # Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
