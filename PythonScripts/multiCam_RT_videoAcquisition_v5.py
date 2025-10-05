@@ -1386,7 +1386,7 @@ class MainFrame(wx.Frame):
                     self._stim_armed = True   # New Code
                     
                     # 9-29-2025, New Code gate stim arming by 20-trial blocks of Tone-2 successes
-                    block_size = 5
+                    block_size = 20
                     block_index = (self.reach_number - 1) // block_size
                     stim_allowed = (block_index % 2 == 1)
 
@@ -1636,7 +1636,7 @@ class MainFrame(wx.Frame):
         
         #  9-29-2025 New Code inside vidPlayer
         
-        block_size = 5
+        block_size = 20
         block_index = (self.reach_number - 1) // block_size
         stim_allowed = (block_index % 2 == 1)
 
