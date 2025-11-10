@@ -398,15 +398,36 @@ class MainFrame(wx.Frame):
         sersizer.Add(self.auto_delay, pos=(vpos,6), span=(0,6), flag=wx.LEFT, border=wSpace)
         self.auto_delay.SetValue(0)
         self.auto_delay.Bind(wx.EVT_CHECKBOX, self.comFun)
-
+        
+        
+        # New Code 11-10-2025  ⟶ immediately after the block above, before `sersize = vpos`
+        vpos+=1  # New Code
+        self.block_size_ctrl = wx.SpinCtrl(self.widget_panel, value=str(20), size=(bw, -1))  # New Code
+        min_text = wx.StaticText(self.widget_panel, label='Block size:')  # New Code
+        sersizer.Add(min_text, pos=(vpos,0), span=(1,3), flag=wx.TOP, border=wSpace)  # New Code
+        sersizer.Add(self.block_size_ctrl, pos=(vpos,3), span=(1,3), flag=wx.ALL, border=wSpace)  # New Code
+        self.block_size_ctrl.SetMin(1)  # New Code
+        self.block_size_ctrl.SetMax(1000)  # New Code
+        self.block_size_ctrl.Bind(wx.EVT_SPINCTRL, self.comFun)  # New Code
+        # New Code 11-10-2025 
+   
         sersize = vpos
         vpos = camsize
         sbsizer.Add(sersizer, 1, wx.EXPAND | wx.ALL, 5)
         wSpacer.Add(sbsizer, pos=(vpos, 0), span=(sersize,3),flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, border=wSpace)
+        
+      #  self.serHlist = [self.send_home, self.auto_delay, self.load_pellet,
+                          #self.trig_release, self.send_pellet, self.tone_delay_min,
+                          #self.delay_count, self.tone_delay_max, self.send_stim,
+                          #self.Xmag,self.Ymag,self.Zmag,self.toggle_style]
+        # New Code 11-10-25
         self.serHlist = [self.send_home, self.auto_delay, self.load_pellet,
                           self.trig_release, self.send_pellet, self.tone_delay_min,
                           self.delay_count, self.tone_delay_max, self.send_stim,
-                          self.Xmag,self.Ymag,self.Zmag,self.toggle_style]
+                          self.Xmag, self.Ymag, self.Zmag, self.toggle_style,
+                          self.block_size_ctrl]  # New Code
+        # New Code 11-10-25
+
         for h in self.serHlist:
             h.Enable(False)
         
@@ -705,6 +726,13 @@ class MainFrame(wx.Frame):
         self.setProtocol(None)
         self.setDelStyle()
         
+        # New Code 11-10-2025
+        # default if missing
+        if 'blockSize' not in self.user_cfg:  # New Code
+            self.user_cfg['blockSize'] = 20   # New Code
+        self.block_size_ctrl.SetValue(int(self.user_cfg['blockSize']))  # New Code
+        # New Code 11-10-2025
+
     def setProtocol(self, event):
         self.proto_str = self.protocol.GetStringSelection()
         self.user_cfg['protocolSelected'] = self.protocol.GetSelection()
@@ -1386,9 +1414,16 @@ class MainFrame(wx.Frame):
                     self._stim_armed = True   # New Code
                     
                     # 9-29-2025, New Code gate stim arming by 20-trial blocks of Tone-2 successes
-                    block_size = 20
-                    block_index = (self.reach_number - 1) // block_size
-                    stim_allowed = (block_index % 2 == 1)
+                    #block_size = 5
+                   # block_index = (self.reach_number - 1) // block_size
+                    #stim_allowed = (block_index % 2 == 1)
+                    
+                    # New Code 11-10-25
+                    # Gate stim arming by N-trial blocks from GUI
+                    block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
+                    block_index = (self.reach_number - 1) // block_size  # New Code
+                    stim_allowed = (block_index % 2 == 1)  # New Code
+                    # New Code 11-10-25
 
                     self._stim_armed = stim_allowed
                     
@@ -1636,9 +1671,16 @@ class MainFrame(wx.Frame):
         
         #  9-29-2025 New Code inside vidPlayer
         
-        block_size = 20
-        block_index = (self.reach_number - 1) // block_size
-        stim_allowed = (block_index % 2 == 1)
+        #block_size = 20
+       # block_index = (self.reach_number - 1) // block_size
+       # stim_allowed = (block_index % 2 == 1)
+
+        # New Code 11-10-2025
+        block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
+        block_index = (self.reach_number - 1) // block_size  # New Code
+        stim_allowed = (block_index % 2 == 1)  # New Code
+        # New Code 11-10-2025
+
 
         # Keep delivery style in sync
         if self.user_cfg['deliveryStyle'] != self.del_style.value:
