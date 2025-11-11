@@ -180,8 +180,9 @@ void setup(){
 //--------------- loop -----------------------------------------------
 void loop(){
   if (servoActive == true){
-    if ((millis()-servoSetTime) > 1000){
+    if ((millis()-servoSetTime) > 2000){
       myservo_cy.detach();
+      myservo.detach();
       servoActive = false;
     }
   }
@@ -670,7 +671,12 @@ void setServoStep(){
   delay(5);
   servoInterv = (float)stepCt;
   servoInterv = (servoGoalVal-(float)prevServoPos)/servoInterv;
-  
+  if (!myservo.attached()){
+    myservo.attach(servoPin);
+    while (!myservo.attached()){
+      delay(1);
+    }
+  }
   for(int x = 0; x < stepCt; x++) {
     servoSetVal = prevServoPos+servoInterv*(float)x;
     myservo.writeMicroseconds(servoSetVal);
@@ -691,6 +697,8 @@ void setServoStep(){
   delay(5);
   digitalWrite(energizePin, HIGH);
   delay(5);
+  servoSetTime = millis();
+  servoActive = true;
 }
 
 void sendHome(){
@@ -810,6 +818,13 @@ void setStepper(){
 }
 
 void setServoPos(){  
+  if (!myservo.attached()){
+    myservo.attach(servoPin);
+    while (!myservo.attached()){
+      delay(1);
+    }
+  }
+  
   servoCt = abs((servoGoalVal-prevServoPos)/2)+1;
   servoInterv = (servoGoalVal-(float)prevServoPos)/(float)servoCt;
   if (servoCt > 0){
@@ -821,6 +836,8 @@ void setServoPos(){
     }
     prevServoPos = servoGoalVal;
   }
+  servoSetTime = millis();
+  servoActive = true;
 }
 
 void setCylindoor(){
