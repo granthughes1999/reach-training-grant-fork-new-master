@@ -126,8 +126,17 @@ class MainFrame(wx.Frame):
         self.trial_line_printed = False
         self.hand_timing = None
         self.trial_delays = []  # store delays for this session, Grant Hughes, 8-11-25
+        
+        # These are for logging which trial number the event occured on, relative to ALL trials
+        self.baseline_trials = []
         self.stim_allowed_trials = []  # store trial number when opto-stim is ON for this session, Grant Hughes, 11-13-25
         self.washout_trials = []
+        
+        # These are for logging which trial number the event occured on, relative to Tone-2 success counter
+            # This Tone-2 Aligned matches reachCurators trial #, and also is eaiser for plotting since you dont want to plot trials with no tone-2 ie. no reach
+        self.baseline_trials_tone2_aligned = []
+        self.stim_allowed_trials_tone2_aligned = []  
+        self.washout_trials_tone2_aligned = []
 
         self._need_new_delay_list = False #  Grant Hughes, 8-11-25 
         self.tone1_dur_ms = getattr(self, "tone1_dur_ms", 500)  # Grant Hughes, 8-11-25 , calibration, can move to user_cfg if desired
@@ -406,7 +415,7 @@ class MainFrame(wx.Frame):
         # New Code 11-10-2025  ⟶ immediately after the block above, before `sersize = vpos`
         vpos+=1  # New Code
         self.block_size_ctrl = wx.SpinCtrl(self.widget_panel, value=str(20), size=(bw, -1))  # New Code
-        min_text = wx.StaticText(self.widget_panel, label='Block size:')  # New Code
+        min_text = wx.StaticText(self.widget_panel, label='Trials Per Epoch:')  # New Code
         sersizer.Add(min_text, pos=(vpos,0), span=(1,3), flag=wx.TOP, border=wSpace)  # New Code
         sersizer.Add(self.block_size_ctrl, pos=(vpos,3), span=(1,3), flag=wx.ALL, border=wSpace)  # New Code
         self.block_size_ctrl.SetMin(1)  # New Code
@@ -845,10 +854,8 @@ class MainFrame(wx.Frame):
         #self.first_delay = -1
         self.first_delay = self.delay_values[0]  # Set this here!
         print('----------------------------------------------------------------------------------------------------------------------------')
-        print('New Random delay list:')
-        print(self.delay_values)
-        print('----------------------------------------------------------------------------------------------------------------------------')
-        print('----------------------------------------------------------------------------------------------------------------------------')
+        print('New Random Delay List:', self.delay_values)
+        #print('----------------------------------------------------------------------------------------------------------------------------')
 
 
 
@@ -1485,24 +1492,31 @@ class MainFrame(wx.Frame):
                         #else:
                             #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                             #self.washout_trials.append(total_trial_count)
-                            
+    
                             
                             # Only log during active recording (nested by epoch)
                     if self.rec.GetValue():  # New Code
                         total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
-            
+                        if block_index == 0:
+                            self.baseline_trials.append(total_trial_count)
+                            self.baseline_trials_tone2_aligned.append(self.reach_number)
                         # Skip baseline (block_index == 0) and only log stim/washout epochs  # New Code
                         if block_index > 0 and current_epoch >= 1:  # New Code
                             if stim_allowed:  # New Code
                                 # Ensure list exists for this epoch (1-indexed → 0-indexed)  # New Code
                                 while len(self.stim_allowed_trials) < current_epoch:  # New Code
                                     self.stim_allowed_trials.append([])              # New Code
+                                    self.stim_allowed_trials_tone2_aligned.append([])  
                                 self.stim_allowed_trials[current_epoch - 1].append(total_trial_count)  # New Code
+                                self.stim_allowed_trials_tone2_aligned[current_epoch - 1].append(self.reach_number)  # New Code
+
                             else:  # washout trial  # New Code
                                 while len(self.washout_trials) < current_epoch:      # New Code
-                                    self.washout_trials.append([])                  # New Code
+                                    self.washout_trials.append([]) 
+                                    self.washout_trials_tone2_aligned.append([]) # New Code
                                 self.washout_trials[current_epoch - 1].append(total_trial_count)  # New Code
-                   
+                                self.washout_trials_tone2_aligned[current_epoch - 1].append(self.reach_number)  # New Code
+
                     # Grant Hughes, 8-11-25, NOW, after the reveal line has printed, announce and rebuild the next list if we completed a cycle
                     if getattr(self, "_need_new_delay_list", False):
                         self.make_delay_iters()
@@ -1861,13 +1875,25 @@ class MainFrame(wx.Frame):
     
             # New Code: reset per-recording state that must not carry over
             if not hasattr(self, "trial_delays"):  # New Code
-                self.trial_delays = []            # New Code
+                self.trial_delays = [] 
+                # These are aligned to All trial counter, meaning it incldues all tone-1 in the count even when no tone-2 occurs
+                self.baseline_trials = []
                 self.stim_allowed_trials = []
                 self.washout_trials = []
+                # These are for logging which trial number the event occured on, relative to Tone-2 success counter
+                    # This Tone-2 Aligned matches reachCurators trial #, and also is eaiser for plotting since you dont want to plot trials with no tone-2 ie. no reach
+                self.baseline_trials_tone2_aligned = []
+                self.stim_allowed_trials_tone2_aligned = []  
+                self.washout_trials_relative_tone2_aligned = []
             else:                                 # New Code
                 self.trial_delays.clear()         # New Code
                 self.stim_allowed_trials.clear()
                 self.washout_trials.clear()
+                self.baseline_trials.clear()
+                self.baseline_trials_tone2_aligned.clear()
+                self.stim_allowed_trials_tone2_aligned.clear()
+                self.washout_trials_tone2_aligned.clear()
+
             self._need_new_delay_list = False     # New Code
             
             # New Code
@@ -2004,7 +2030,6 @@ class MainFrame(wx.Frame):
             print(f'Set Recording Duration: {recording_duration_min:.0f} minutes')
             print(f'Delay Pellet Reveal Times (ms): {self.ordered_delay_values}')
             print(f'Max Wait (ms): {max_wait_time:.0f}')
-            print(f'💡   Optical Stim block_size: {self.block_size_logging}')
             print('----------------------------------------------------------------------')
             print('----------------------------------------------------------------------\n\n\n')
             
@@ -2083,33 +2108,71 @@ class MainFrame(wx.Frame):
             total_trial_count = self.trial_reset_count + self.reach_number  + self.no_pellet_detect_count
             if total_trial_count == 0:
                 total_trial_count = 1  # avoid divide-by-zero
-            print(f'\n\n')
+            print('\n\n')
             print('───────────────────────────────────────────────')
             print(f'📄 {self.sess_info} Recording Summary')
             print('───────────────────────────────────────────────')
-            print(f" #️⃣   Total Trials:          {total_trial_count}")
-            print(f"✔️   Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
-            print(f"⚠️  Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫  No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
-            print(f"💡   Optical block_size:   {self.block_size_logging}")
-
+            print(f" #️⃣     Total Trials:          {total_trial_count}")
+            print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
+            print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
+            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
+            #print(f"🔟    Epoch Sizes:   {self.block_size_logging}")
+            print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
+            print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
+            print('───────────────────────────────────────────────\n')
             print('───────────────────────────────────────────────\n\n')
-           
+            print('\n\n\n')
+            print('───────────────────────────────────────────────\n')
+            print('Epoch Data\n')
+            print('───────────────────────────────────────────────\n\n')
+            print('--- All Trials Aligned ---')
+            print("Baseline Trails / Epochs:", self.baseline_trials)
+            print("Optical Stimulation Trials / Epochs:", self.stim_allowed_trials)
+            print("Washout Trials / Epochs:", self.washout_trials)
+            print('')
+            print('--- Tone-2 Aligned Trials ---')
+            print("Baseline Trails / Epochs:", self.baseline_trials_tone2_aligned)
+            print("Optical Stimulation Trials / Epochs:", self.stim_allowed_trials_tone2_aligned)
+            print("Washout Trials / Epochs:", self.washout_trials_tone2_aligned)
+            print('\n\n\n')
+            print('───────────────────────────────────────────────\n')
+            print('File Saves\n')
             print('───────────────────────────────────────────────\n\n')
 
             # ✅ Save trial delays array, grant hughes, 8-11-25
             delay_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_trial_delays.npy"
+
+            baseline_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_baseline_trial_numbers.npy"
             stim_allowed_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_stim_allowed_trial_numbers.npy"
             washout_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_washout_trial_numbers.npy"
-
+                      
+            baseline_tone2_aligned_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_baseline_trial_numbers_tone2_aligned.npy"
+            stim_allowed_tone2_aligned_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_stim_allowed_trial_numbers_tone2_aligned.npy"
+            washout_list_tone2_aligned_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_washout_trial_numbers_tone2_aligned.npy"
 
             np.save(delay_list_path, np.array(self.trial_delays, dtype=np.int32))
-            np.save(stim_allowed_list_path, np.array(self.stim_allowed_trials, dtype=np.int32))
-            np.save(washout_list_path, np.array(self.washout_trials, dtype=np.int32))
+            
+            # stim / washout are now nested per epoch → use dtype=object
+            np.save(baseline_list_path, np.array(self.baseline_trials, dtype=np.int32))
+            np.save(stim_allowed_list_path, np.array(self.stim_allowed_trials, dtype=object))  # New Code
+            np.save(washout_list_path, np.array(self.washout_trials, dtype=object)) 
+            # stim / washout are now nested per epoch → use dtype=object
+            np.save(baseline_tone2_aligned_list_path, np.array(self.baseline_trials_tone2_aligned, dtype=np.int32))
+            np.save(stim_allowed_tone2_aligned_list_path, np.array(self.stim_allowed_trials_tone2_aligned, dtype=object))  # New Code
+            np.save(washout_list_tone2_aligned_path, np.array(self.washout_trials_tone2_aligned, dtype=object)) 
+
+           # np.save(stim_allowed_list_path, np.array(self.stim_allowed_trials, dtype=np.int32))
+           # np.save(washout_list_path, np.array(self.washout_trials, dtype=np.int32))
 
             print(f"[INFO] Saved trial delays to {delay_list_path}")
+            print('')
+            print(f"[INFO] Saved baseline_list_path to {baseline_list_path}")
             print(f"[INFO] Saved stim_allowed_trials to {stim_allowed_list_path}")
             print(f"[INFO] Saved washout_list_path to {washout_list_path}")
+            print('')
+            print(f"[INFO] Saved baseline_trials_tone2_aligned to {baseline_tone2_aligned_list_path}")
+            print(f"[INFO] Saved stim_allowed_trials_tone2_aligned to {stim_allowed_tone2_aligned_list_path}")
+            print(f"[INFO] Saved washout_trials_tone2_aligned to {washout_list_tone2_aligned_path}")
 
                         
            
