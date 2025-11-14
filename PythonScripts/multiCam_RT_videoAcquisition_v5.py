@@ -1478,13 +1478,30 @@ class MainFrame(wx.Frame):
                     print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Tone-2 Success Count: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
                    
                     # Only log during active recording
-                    if self.rec.GetValue():
-                        if stim_allowed:
-                            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                            self.stim_allowed_trials.append(total_trial_count)
-                        else:
-                            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                            self.washout_trials.append(total_trial_count)
+                    #if self.rec.GetValue():
+                        #if stim_allowed:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.stim_allowed_trials.append(total_trial_count)
+                        #else:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.washout_trials.append(total_trial_count)
+                            
+                            
+                            # Only log during active recording (nested by epoch)
+                    if self.rec.GetValue():  # New Code
+                        total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
+            
+                        # Skip baseline (block_index == 0) and only log stim/washout epochs  # New Code
+                        if block_index > 0 and current_epoch >= 1:  # New Code
+                            if stim_allowed:  # New Code
+                                # Ensure list exists for this epoch (1-indexed → 0-indexed)  # New Code
+                                while len(self.stim_allowed_trials) < current_epoch:  # New Code
+                                    self.stim_allowed_trials.append([])              # New Code
+                                self.stim_allowed_trials[current_epoch - 1].append(total_trial_count)  # New Code
+                            else:  # washout trial  # New Code
+                                while len(self.washout_trials) < current_epoch:      # New Code
+                                    self.washout_trials.append([])                  # New Code
+                                self.washout_trials[current_epoch - 1].append(total_trial_count)  # New Code
                    
                     # Grant Hughes, 8-11-25, NOW, after the reveal line has printed, announce and rebuild the next list if we completed a cycle
                     if getattr(self, "_need_new_delay_list", False):
