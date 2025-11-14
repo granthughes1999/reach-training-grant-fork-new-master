@@ -126,6 +126,9 @@ class MainFrame(wx.Frame):
         self.trial_line_printed = False
         self.hand_timing = None
         self.trial_delays = []  # store delays for this session, Grant Hughes, 8-11-25
+        self.stim_allowed_trials = []  # store trial number when opto-stim is ON for this session, Grant Hughes, 11-13-25
+        self.washout_trials = []
+
         self._need_new_delay_list = False #  Grant Hughes, 8-11-25 
         self.tone1_dur_ms = getattr(self, "tone1_dur_ms", 500)  # Grant Hughes, 8-11-25 , calibration, can move to user_cfg if desired
 
@@ -1370,6 +1373,7 @@ class MainFrame(wx.Frame):
                     getNewPellet = True
                     self.trial_reset_count += 1
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                    self.total_trials = total_trial_count
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
                     if self.check_delay.GetValue():
                             ## --- measure actual waiting ---
@@ -1421,15 +1425,41 @@ class MainFrame(wx.Frame):
                     # New Code 11-10-25
                     # Gate stim arming by N-trial blocks from GUI
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
+                    self.block_size_logging = block_size
                     block_index = (self.reach_number - 1) // block_size  # New Code
                     stim_allowed = (block_index % 2 == 1)  # New Code
-                    # New Code 11-10-25
+                    # Trial number within the current block/epoch (1..block_size)
+                    trial_in_epoch = ((self.reach_number - 1) % block_size) + 1  # New Code
+                                        
+                    if block_index == 0:
+                        # First block: baseline, no stim
+                        stim_allowed = False  # New Code
+                        current_epoch = 0     # New Code (optional; useful for logging)
+                        current_block = 'Baseline epoch'  # New Code
+                    else:
+                        # For blocks 1,2,3,...:
+                        # block_index: 1,2 -> epoch 1; 3,4 -> epoch 2; etc.
+                        current_epoch = min((block_index + 1) // 2, 5)  # cap at epoch 5  # New Code
+                    
+                        if block_index % 2 == 1:
+                            # Odd block_index: stimulation block (1,3,5,7,9)
+                            stim_allowed = True  # New Code
+                            current_block = f'Stimulation Epoch #{current_epoch}'  # New Code
+                        else:
+                            # Even block_index: washout block (2,4,6,8,10)
+                            stim_allowed = False  # New Code
+                            current_block = f'Washout Epoch #{current_epoch}'  # New Code
+                    
+                    # Optional: human-readable progress label, e.g. "3/20 Stimulation Epoch #1"
+                    epoch_progress_label = f"{trial_in_epoch}/{block_size} {current_block}"  # New Code
+                                        # New Code 11-10-25
 
                     self._stim_armed = stim_allowed
                     
                     # Only log during active recording
                     if self.rec.GetValue():
                         self.trial_delays.append(self.curr_trial_delay_ms)
+                        
                     
                     # Log this trial's delay only once, at reveal time, grant hughes, 8-11-2025
                     #self.trial_delays.append(self.curr_trial_delay_ms)
@@ -1445,7 +1475,16 @@ class MainFrame(wx.Frame):
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
                    
-                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || Tone-2 Success Count: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Tone-2 Success Count: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+                   
+                    # Only log during active recording
+                    if self.rec.GetValue():
+                        if stim_allowed:
+                            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            self.stim_allowed_trials.append(total_trial_count)
+                        else:
+                            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            self.washout_trials.append(total_trial_count)
                    
                     # Grant Hughes, 8-11-25, NOW, after the reveal line has printed, announce and rebuild the next list if we completed a cycle
                     if getattr(self, "_need_new_delay_list", False):
@@ -1806,8 +1845,12 @@ class MainFrame(wx.Frame):
             # New Code: reset per-recording state that must not carry over
             if not hasattr(self, "trial_delays"):  # New Code
                 self.trial_delays = []            # New Code
+                self.stim_allowed_trials = []
+                self.washout_trials = []
             else:                                 # New Code
                 self.trial_delays.clear()         # New Code
+                self.stim_allowed_trials.clear()
+                self.washout_trials.clear()
             self._need_new_delay_list = False     # New Code
             
             # New Code
@@ -1944,6 +1987,7 @@ class MainFrame(wx.Frame):
             print(f'Set Recording Duration: {recording_duration_min:.0f} minutes')
             print(f'Delay Pellet Reveal Times (ms): {self.ordered_delay_values}')
             print(f'Max Wait (ms): {max_wait_time:.0f}')
+            print(f'💡   Optical Stim block_size: {self.block_size_logging}')
             print('----------------------------------------------------------------------')
             print('----------------------------------------------------------------------\n\n\n')
             
@@ -2030,14 +2074,26 @@ class MainFrame(wx.Frame):
             print(f"✔️   Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
             print(f"⚠️  Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
             print(f"🚫  No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
+            print(f"💡   Optical block_size:   {self.block_size_logging}")
+
             print('───────────────────────────────────────────────\n\n')
            
             print('───────────────────────────────────────────────\n\n')
 
             # ✅ Save trial delays array, grant hughes, 8-11-25
             delay_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_trial_delays.npy"
+            stim_allowed_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_stim_allowed_trial_numbers.npy"
+            washout_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_washout_trial_numbers.npy"
+
+
             np.save(delay_list_path, np.array(self.trial_delays, dtype=np.int32))
+            np.save(stim_allowed_list_path, np.array(self.stim_allowed_trials, dtype=np.int32))
+            np.save(washout_list_path, np.array(self.washout_trials, dtype=np.int32))
+
             print(f"[INFO] Saved trial delays to {delay_list_path}")
+            print(f"[INFO] Saved stim_allowed_trials to {stim_allowed_list_path}")
+            print(f"[INFO] Saved washout_list_path to {washout_list_path}")
+
                         
            
             # Cleanly close logging
