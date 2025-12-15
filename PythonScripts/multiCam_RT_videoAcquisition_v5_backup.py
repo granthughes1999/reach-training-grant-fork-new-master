@@ -340,29 +340,6 @@ class MainFrame(wx.Frame):
         sersizer.Add(self.trig_release, pos=(vpos,9), span=(0,3), flag=wx.LEFT, border=wSpace)
         self.trig_release.Bind(wx.EVT_BUTTON, self.comFun)
         
-
-        # -------------------- New Code: map keys H/P/M/R --- 12-14-2025 -----------------
-        self.ID_KEY_HOME    = wx.NewIdRef().Id   # New Code
-        self.ID_KEY_PELLET  = wx.NewIdRef().Id   # New Code
-        self.ID_KEY_MOUSE   = wx.NewIdRef().Id   # New Code
-        self.ID_KEY_RELEASE = wx.NewIdRef().Id   # New Code
-
-        self.Bind(wx.EVT_MENU, self._hotkey_home,    id=self.ID_KEY_HOME)     # New Code
-        self.Bind(wx.EVT_MENU, self._hotkey_pellet,  id=self.ID_KEY_PELLET)   # New Code
-        self.Bind(wx.EVT_MENU, self._hotkey_mouse,   id=self.ID_KEY_MOUSE)    # New Code
-        self.Bind(wx.EVT_MENU, self._hotkey_release, id=self.ID_KEY_RELEASE)  # New Code
-
-        accel = wx.AcceleratorTable([                                      # New Code
-            (0, ord('H'), self.ID_KEY_HOME),                                # New Code
-            (0, ord('P'), self.ID_KEY_PELLET),                              # New Code
-            (0, ord('M'), self.ID_KEY_MOUSE),                               # New Code
-            (0, ord('R'), self.ID_KEY_RELEASE),                             # New Code
-        ])                                                                  # New Code
-        self.SetAcceleratorTable(accel)                                    # New Code
-        # --------------------------  12-14-2025  ----------------------------------------
-
-
-
         vpos+=1
         
         self.Xmag = wx.SpinCtrl(self.widget_panel, value=str(0), size=(bw, -1))
@@ -960,20 +937,26 @@ class MainFrame(wx.Frame):
             ndx = self.axes.index(self.pelletAxes)
             self.pLoc[ndx].set_center([self.pellet_x, self.pellet_y])
             
-    # -------------------- New Code: single-key handlers --- 12-14-2025  --------------------
-    def _hotkey_home(self, event):     # New Code
-        self.com.value = 1            # New Code
+        #elif self.Ymag == evobj:
+            #self.mVal.value = self.Ymag.GetValue()
+            #self.com.value = 13
+            #self.pellet_x = self.system_cfg['pelletXY'][0]-self.Ymag.GetValue()*self.system_cfg['shiftFactor']
+            #ndx = self.axes.index(self.pelletAxes)
+            #self.pLoc[ndx].set_center([self.pellet_x,self.pellet_y])
+        #elif self.Zmag == evobj:
+            #self.mVal.value = self.Zmag.GetValue()
+            #self.com.value = 14
+            #self.pellet_y = self.system_cfg['pelletXY'][1]-self.Zmag.GetValue()*self.system_cfg['shiftFactor']
+            #ndx = self.axes.index(self.pelletAxes)
+            #self.pLoc[ndx].set_center([self.pellet_x,self.pellet_y])
+        # END Grant 07-10-2025, disabled the automatic pellet ROI movement when changing X,Y posiition in GUI
 
-    def _hotkey_pellet(self, event):   # New Code
-        self.com.value = 2            # New Code
-
-    def _hotkey_mouse(self, event):    # New Code
-        self.com.value = 3            # New Code
-
-    def _hotkey_release(self, event):  # New Code
-        self.com.value = 4            # New Code
-    # -------------------------- 12-14-2025 --------------------------------------------
-
+            
+            
+        # elif self.send_stim == evobj:
+        # # Start an optical-latency test tied to the stim ROI, then fire TTL fast
+        #     self._start_stim_latency_test()
+        #     self._fire_stim_fast("button")
             
     def setCrop(self, event):
         self.widget_panel.Enable(False)

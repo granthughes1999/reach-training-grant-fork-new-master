@@ -39,7 +39,7 @@ const int energizeX = 4; // physical pin for X axis stepper
 const int energizeY = 3; // physical pin for Y axis stepper
 const int energizeZ = 2; // physical pin for Z axis stepper
 
-// Homing switch
+// Homing switchF
 const int switchX = 7; // physical pin for X axis switch
 const int switchY = 6; // physical pin for Y axis switch
 const int switchZ = 5; // physical pin for Z axis switch
@@ -340,6 +340,7 @@ void loop(){
     if (msgInt >= 0){
       Serial.print(msgInt);
     }
+
     Serial.print('!');
     if (rxChar == 'A'){
       setSpoonServoHome(msgInt);
