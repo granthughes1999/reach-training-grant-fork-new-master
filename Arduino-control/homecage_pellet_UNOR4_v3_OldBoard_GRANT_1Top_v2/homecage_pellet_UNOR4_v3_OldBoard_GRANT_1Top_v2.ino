@@ -8,6 +8,24 @@
  *  by W. Ryan Williamson
  *  ryan.williamson@ucdenver.edu
  */
+// ====================== NEW CODE 12-16-2025 (TOP OF FILE) ======================
+static inline int median5(int a, int b, int c, int d, int e) {   // New Code
+  int x[5] = {a,b,c,d,e};                                       // New Code
+  for (int i=0;i<5;i++)                                         // New Code
+    for (int j=i+1;j<5;j++)                                     // New Code
+      if (x[j] < x[i]) { int t=x[i]; x[i]=x[j]; x[j]=t; }       // New Code
+  return x[2];                                                  // New Code
+}                                                              // New Code
+
+int readPosFiltered(int pin) {                                  // New Code
+  int a = analogRead(pin);                                      // New Code
+  int b = analogRead(pin);                                      // New Code
+  int c = analogRead(pin);                                      // New Code
+  int d = analogRead(pin);                                      // New Code
+  int e = analogRead(pin);                                      // New Code
+  return median5(a,b,c,d,e);                                    // New Code
+}                                                              // New Code
+// ====================== END NEW CODE 12-16-2025 ======================
 
 #include <Servo.h>
 #include <analogWave.h>
@@ -104,7 +122,10 @@ int cylindoorState = 0; // 0=down ; 1=up
 int deliveryState = 0; // 0=10mm away ; 1=at mouse
 unsigned long timerVal = 0;
 unsigned long servoSetTime = millis();
+// NEW CODE
 bool servoActive = false;
+const unsigned long SPOON_HOME_HOLD_MS = 250;  // New Code: 12-17-2025 hold torque at home before detach
+
 
 int msgInt = 0;
 int ser2read = 0;
@@ -179,14 +200,14 @@ void setup(){
 
 //--------------- loop -----------------------------------------------
 void loop(){
-  if (servoActive == true){
-    if ((millis()-servoSetTime) > 2000){
-      myservo_cy.detach();
-      myservo.detach();
-      servoActive = false;
-    }
-  }
-  
+
+// NEW CODE: only detach cylindoor servo automatically; spoon servo detach is handled at home only
+if (servoActive == true){                                  // New Code
+  if ((millis()-servoSetTime) > 2000){                     // New Code
+    myservo_cy.detach();                                   // New Code
+    servoActive = false;                                   // New Code
+  }                                                        // New Code
+}                                                          // New Code
   // if (digitalRead(buttonPin) == LOW & allowButtonDelivery == 1){
   //   buttonPressedTime = millis();
   //   while (digitalRead(buttonPin) == LOW){
@@ -690,10 +711,13 @@ void setServoStep(){
   }
   prevServoPos = servoGoalVal;
   
-  // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
-  if ((int)servoGoalVal == spoonHomeVal) {  // NEW CODE
-    myservo.detach();                       // NEW CODE
-  }                                         // NEW CODE
+  // 12-17-2025 NEW CODE: detach spoon servo immediately when at level (home) position
+  // NEW CODE: hold at home briefly to eliminate endpoint variability, then detach
+  if ((int)servoGoalVal == spoonHomeVal) {        // New Code
+    myservo.writeMicroseconds(spoonHomeVal);      // New Code (explicit final command)
+    delay(SPOON_HOME_HOLD_MS);                    // New Code (settle with torque)
+    myservo.detach();                             // New Code
+  }                                               // New Code                                    // NEW CODE
   // NEW CODE: detach spoon servo immediately when at level (home) position
 
   digitalWrite(dirPinX,LOW);
@@ -845,9 +869,12 @@ void setServoPos(){
   }
 
     // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
-  if ((int)servoGoalVal == spoonHomeVal) {  // NEW CODE
-    myservo.detach();                       // NEW CODE
-  }                                         // NEW CODE
+  // NEW CODE: hold at home briefly to eliminate endpoint variability, then detach
+  if ((int)servoGoalVal == spoonHomeVal) {        // New Code
+    myservo.writeMicroseconds(spoonHomeVal);      // New Code
+    delay(SPOON_HOME_HOLD_MS);                    // New Code
+    myservo.detach();                             // New Code
+  }                                               // New Code                                    // NEW CODE
 
   servoSetTime = millis();                  // old code
   servoActive = true;                       // old code

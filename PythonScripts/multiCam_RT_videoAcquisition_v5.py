@@ -346,19 +346,25 @@ class MainFrame(wx.Frame):
         self.ID_KEY_MOUSE   = wx.NewIdRef().Id   # New Code
         self.ID_KEY_RELEASE = wx.NewIdRef().Id   # New Code
         self.ID_KEY_INIT = wx.NewIdRef().Id  # New Code
-        
+        self.ID_KEY_LIVE   = wx.NewIdRef().Id   # New Code
+        self.ID_KEY_RECORD = wx.NewIdRef().Id   # New Code
+
         self.Bind(wx.EVT_MENU, self._hotkey_home,    id=self.ID_KEY_HOME)     # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_pellet,  id=self.ID_KEY_PELLET)   # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_mouse,   id=self.ID_KEY_MOUSE)    # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_release, id=self.ID_KEY_RELEASE)  # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_init, id=self.ID_KEY_INIT)  # New Code
-        
+        self.Bind(wx.EVT_MENU, self._hotkey_live,   id=self.ID_KEY_LIVE)    # New Code
+        self.Bind(wx.EVT_MENU, self._hotkey_record, id=self.ID_KEY_RECORD)  # New Code
+
         accel = wx.AcceleratorTable([                                      # New Code
             (0, ord('H'), self.ID_KEY_HOME),                                # New Code
             (0, ord('P'), self.ID_KEY_PELLET),                              # New Code
             (0, ord('M'), self.ID_KEY_MOUSE),                               # New Code
             (0, ord('R'), self.ID_KEY_RELEASE),                             # New Code
-            (0, ord('I'), self.ID_KEY_INIT),   # New Code
+            (0, ord('I'), self.ID_KEY_INIT),  
+            (0, ord('L'), self.ID_KEY_LIVE),     # New Code
+            (0, ord('V'), self.ID_KEY_RECORD),   # New Code
         ])                                                                  # New Code
         self.SetAcceleratorTable(accel)                                    # New Code
         # --------------------------  12-14-2025  ----------------------------------------
@@ -981,6 +987,30 @@ class MainFrame(wx.Frame):
         new_state = not self.init.GetValue()
         self.init.SetValue(new_state)
         self.initCams(event)
+    # NEW CODE
+    def _hotkey_live(self, event):
+        """
+        Toggle Live / Stop exactly like clicking the Live button.
+        """
+        if not self.play.IsEnabled():
+            return
+
+        new_state = not self.play.GetValue()
+        self.play.SetValue(new_state)
+        self.liveFeed(event)
+
+
+    # NEW CODE
+    def _hotkey_record(self, event):
+        """
+        Toggle Record / Stop exactly like clicking the Record button.
+        """
+        if not self.rec.IsEnabled():
+            return
+
+        new_state = not self.rec.GetValue()
+        self.rec.SetValue(new_state)
+        self.recordCam(event)
 
     # -------------------------- 12-14-2025 --------------------------------------------
 
