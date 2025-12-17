@@ -36,7 +36,6 @@ import winsound
 # Log all prints to a file 
 # ###########################################################################
 import sys
-from pathlib import Path
 import datetime
 import io               # ← add this
 
@@ -346,17 +345,20 @@ class MainFrame(wx.Frame):
         self.ID_KEY_PELLET  = wx.NewIdRef().Id   # New Code
         self.ID_KEY_MOUSE   = wx.NewIdRef().Id   # New Code
         self.ID_KEY_RELEASE = wx.NewIdRef().Id   # New Code
-
+        self.ID_KEY_INIT = wx.NewIdRef().Id  # New Code
+        
         self.Bind(wx.EVT_MENU, self._hotkey_home,    id=self.ID_KEY_HOME)     # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_pellet,  id=self.ID_KEY_PELLET)   # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_mouse,   id=self.ID_KEY_MOUSE)    # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_release, id=self.ID_KEY_RELEASE)  # New Code
-
+        self.Bind(wx.EVT_MENU, self._hotkey_init, id=self.ID_KEY_INIT)  # New Code
+        
         accel = wx.AcceleratorTable([                                      # New Code
             (0, ord('H'), self.ID_KEY_HOME),                                # New Code
             (0, ord('P'), self.ID_KEY_PELLET),                              # New Code
             (0, ord('M'), self.ID_KEY_MOUSE),                               # New Code
             (0, ord('R'), self.ID_KEY_RELEASE),                             # New Code
+            (0, ord('I'), self.ID_KEY_INIT),   # New Code
         ])                                                                  # New Code
         self.SetAcceleratorTable(accel)                                    # New Code
         # --------------------------  12-14-2025  ----------------------------------------
@@ -972,6 +974,14 @@ class MainFrame(wx.Frame):
 
     def _hotkey_release(self, event):  # New Code
         self.com.value = 4            # New Code
+        
+        # NEW CODE
+    def _hotkey_init(self, event):
+        # Toggle the Initialize button exactly as a click would
+        new_state = not self.init.GetValue()
+        self.init.SetValue(new_state)
+        self.initCams(event)
+
     # -------------------------- 12-14-2025 --------------------------------------------
 
             

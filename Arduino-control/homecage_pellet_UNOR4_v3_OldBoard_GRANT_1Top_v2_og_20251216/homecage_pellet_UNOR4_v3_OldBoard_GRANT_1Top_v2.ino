@@ -690,12 +690,6 @@ void setServoStep(){
   }
   prevServoPos = servoGoalVal;
   
-  // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
-  if ((int)servoGoalVal == spoonHomeVal) {  // NEW CODE
-    myservo.detach();                       // NEW CODE
-  }                                         // NEW CODE
-  // NEW CODE: detach spoon servo immediately when at level (home) position
-
   digitalWrite(dirPinX,LOW);
   delay(5);
   digitalWrite(dirPinY,LOW);
@@ -843,16 +837,6 @@ void setServoPos(){
     }
     prevServoPos = servoGoalVal;
   }
-
-    // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
-  if ((int)servoGoalVal == spoonHomeVal) {  // NEW CODE
-    myservo.detach();                       // NEW CODE
-  }                                         // NEW CODE
-
-  servoSetTime = millis();                  // old code
-  servoActive = true;                       // old code
-    // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
-
   servoSetTime = millis();
   servoActive = true;
 }

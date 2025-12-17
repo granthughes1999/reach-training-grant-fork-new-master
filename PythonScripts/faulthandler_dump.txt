@@ -1,0 +1,608 @@
+Timeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 330 in _poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 257 in poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 111 in get
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\arduinoCtrl_v5.py", line 102 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 105 in spawn_main
+  File "<string>", line 1 in <module>
+Timeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\serial\serialwin32.py", line 260 in in_waiting
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\arduinoCtrl_v5.py", line 79 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 105 in spawn_main
+  File "<string>", line 1 in <module>
+Timeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\serial\serialwin32.py", line 260 in in_waiting
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\arduinoCtrl_v5.py", line 102 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 105 in spawn_main
+  File "<string>", line 1 in <module>
+Timeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 845 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 328 in _poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 257 in poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 106 in get
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\arduinoCtrl_v5.py", line 102 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\PrTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.pyTimeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 893 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 330 in _poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 257 in poll
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py"Timeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", lineTimeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\serial\serialwin32.py", line 260 in in_waitinTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\thrTimeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00000848 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 869 in wait
+  File "C:\ProgramData\AnaTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00006eb0 (most recent call first)\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Threages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-Timeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstraTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 inTimeout (0:00:05)!
+Thread 0x000074c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+Timeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\dTimeout (0:00:05)!
+Thread 0x00003194 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envTimeout (0:00:05)!
+Thread 0x000010c0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00001634 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\PySpin\PySpin.py", line 47985 in GetNextImage
+  File "C:\Users\christielab\Documents\GitHub\reach-training-grant-fork-new-master\PythonScripts\multiCam_DLC_PySpin_v2_extStim.py", line 246 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\process.py", line 297 in _bootstrap
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 105 in spawn_main
+  File "<string>", line 1 in <module>
+tiprocessing\spawn.py", line 118 in _main
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\spawn.py", line 105 in spawn_main
+  File "<string>", line 1 in <module>
+ster/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>
+Timeout (0:00:05)!
+Thread 0x00004e7c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x0000050c (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x00004ee0 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 296 in wait
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 224 in _feed
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 870 in run
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 926 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\threading.py", line 890 in _bootstrap
+
+Thread 0x000023e4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 306 in _recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\connection.py", line 216 in recv_bytes
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\multiprocessing\queues.py", line 94 in get
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2291 in stopAq
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2357 in initCams
+  File "C:\ProgramData\Anaconda3\envs\data_aq\lib\site-packages\wx\core.py", line 2167 in MainLoop
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2529 in show
+  File "C:/Users/christielab/Documents/GitHub/reach-training-grant-fork-new-master/PythonScripts/multiCam_RT_videoAcquisition_v5.py", line 2533 in <module>

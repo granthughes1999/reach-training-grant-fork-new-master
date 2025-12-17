@@ -296,12 +296,16 @@ class multiCam_DLC_Cam(Process):
                     
                         
                     elif msg == 'updateSettings':
+                        # New Code: 12-08-2025 ensure camera not acquiring before changing locked nodes
+
                         # ser = 0
                         nodemap = cam.GetNodeMap()
                         binsize = user_cfg[camStr]['bin']
-                        cam.BinningHorizontal.SetValue(int(binsize))
-                        cam.BinningVertical.SetValue(int(binsize))
+                        cam.BinningHorizontal.SetValue(int(binsize)) # Uncommented on 12-08-25
+                        cam.BinningVertical.SetValue(int(binsize)) # Uncommented on 12-08-25
+                        ###### 12-08-25
                         
+                
                         # cam.IspEnable.SetValue(False)
                         node_acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
                         if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
