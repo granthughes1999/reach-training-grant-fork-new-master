@@ -125,8 +125,6 @@ class MainFrame(wx.Frame):
         self.trial_line_printed = False
         self.hand_timing = None
         self.trial_delays = []  # store delays for this session, Grant Hughes, 8-11-25
-        self.data_logging_enabled = False  # New Code 12-30-2025
-        self.current_mode_tag = None       # New Code 12-30-2025 ("LIVE" or "REC")
         
         # These are for logging which trial number the event occured on, relative to ALL trials
         self.baseline_trials = []
@@ -623,6 +621,10 @@ class MainFrame(wx.Frame):
         self.dlc = Value(ctypes.c_byte, 0)
         self.stim_status = Value(ctypes.c_byte, 0)
         self.camaq = Value(ctypes.c_byte, 0)
+        
+        # NEW CODE
+        self.data_logging_enabled = False   # New Code 12-30-2025
+
         self.frmaq = Value(ctypes.c_int, 0)
         self.com = Value(ctypes.c_int, -1)
         self.mVal = Value(ctypes.c_int, 0)
@@ -1245,188 +1247,53 @@ class MainFrame(wx.Frame):
         print('todo')
     def exptID(self,event):
         pass
-
-    # NEW CODE 12-30-2025 ---------------------------------------------------------
-    def _start_nonvideo_session(self, mode_tag: str):
-        """
-        Create session folder + metadata + .log for Live (non-video) or Record.
-        For Record you already do this, but we will use it for Live.
-        """
-        date_string = datetime.datetime.now().strftime("%Y%m%d")
-        self.date_string = date_string
-        self.current_mode_tag = mode_tag
-
-        base_dir = os.path.join(self.system_cfg['raw_data_dir'], date_string, self.system_cfg['unitRef'])
-        os.makedirs(base_dir, exist_ok=True)
-
-        prev_expt_list = [name for name in os.listdir(base_dir) if name.startswith('session')]
-        maxSess = 0
-        for p in prev_expt_list:
-            try:
-                sessNum = int(p[-3:])
-                maxSess = max(maxSess, sessNum)
-            except:
-                pass
-
-        file_count = maxSess + 1
-        sess_string = f"session{file_count:03d}"
-        self.sess_info = sess_string
-        self.sess_string = sess_string
-        self.sess_dir = os.path.join(base_dir, sess_string)
-        os.makedirs(self.sess_dir, exist_ok=True)
-
-        # Session log file (separate name for LIVE vs REC)
-        log_path = Path(self.sess_dir) / f"{date_string}_{self.system_cfg['unitRef']}_{sess_string}_{mode_tag}.log"
-        configure_logging(log_path)
-
-        # Minimal metadata (so Live sessions have the same bookkeeping)
-        self.meta, ruamelFile = clara.metadata_template()
-        self.meta['ID'] = self.expt_id.GetValue()
-        self.meta['Stim'] = self.proto_str
-        self.meta['StartTime'] = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.meta['Mode'] = mode_tag  # New Code
-        self.meta['MouseInfo'] = getattr(self, "mouse_info", "No mouse info provided")  # New Code 12-30-2025
-
-
-        meta_name = f"{date_string}_{self.system_cfg['unitRef']}_{sess_string}_{mode_tag}_metadata.yaml"
-        self.metapath = os.path.join(self.sess_dir, meta_name)
-        clara.write_metadata(self.meta, self.metapath)
-
-
-    def _save_nonvideo_outputs(self, mode_tag: str):
-        """
-        Save the same non-video arrays Record saves, but without any video.
-        """
-        if not hasattr(self, "sess_dir") or self.sess_dir is None:
-            return
-
-        delay_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_trial_delays.npy"
-
-        baseline_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_baseline_trial_numbers.npy"
-        stim_allowed_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_stim_allowed_trial_numbers.npy"
-        washout_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_washout_trial_numbers.npy"
-
-        baseline_tone2_aligned_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_baseline_trial_numbers_tone2_aligned.npy"
-        stim_allowed_tone2_aligned_list_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_stim_allowed_trial_numbers_tone2_aligned.npy"
-        washout_list_tone2_aligned_path = Path(self.sess_dir) / f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}_washout_trial_numbers_tone2_aligned.npy"
-
-        np.save(delay_list_path, np.array(self.trial_delays, dtype=np.int32))
-        np.save(baseline_list_path, np.array(self.baseline_trials, dtype=np.int32))
-        np.save(stim_allowed_list_path, np.array(self.stim_allowed_trials, dtype=object))
-        np.save(washout_list_path, np.array(self.washout_trials, dtype=object))
-
-        np.save(baseline_tone2_aligned_list_path, np.array(self.baseline_trials_tone2_aligned, dtype=np.int32))
-        np.save(stim_allowed_tone2_aligned_list_path, np.array(self.stim_allowed_trials_tone2_aligned, dtype=object))
-        np.save(washout_list_tone2_aligned_path, np.array(self.washout_trials_tone2_aligned, dtype=object))
-
-        print(f"[INFO] Saved non-video data to {self.sess_dir}")
-
-        import logging
-        logging.shutdown()
-    # NEW CODE 12-30-2025 ---------------------------------------------------------
-
+        
     def liveFeed(self, event):
         if self.play.GetLabel() == 'Abort':
             self.rec.SetValue(False)
             self.recordCam(event)
-
+            
             if wx.MessageBox("Are you sure?", caption="Abort", style=wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION):
                 shutil.rmtree(self.sess_dir)
                 time.sleep(5)
             self.play.SetValue(False)
-
+                        
         elif self.play.GetValue() == True:
-            if not self.liveTimer.IsRunning():
-                # === NEW 12-31-25 : Mouse info dialog (same as Record) ===
-                dlg = wx.TextEntryDialog(
-                    self,
-                    'Enter mouse information (e.g. Mouse ID, genotype, surgery date):',
-                    'Mouse Info',
-                    ''
-                )
-                if dlg.ShowModal() == wx.ID_OK:
-                    self.mouse_info = dlg.GetValue().strip()
-                    if self.mouse_info == "":
-                        self.mouse_info = "No mouse info provided"
-                else:
-                    self.mouse_info = "Mouse info entry cancelled"
-                dlg.Destroy()
 
+            # NEW CODE
+            self.data_logging_enabled = True   # New Code 12-30-2025
+
+            if not self.liveTimer.IsRunning():
                 if not self.pellet_x == 0:
                     if not self.roi[0] == 0:
                         self.pellet_timing = time.time()
+                        # OLD VERSON = 3
+                        #self.pellet_status = 3
                         self.pellet_status = 3
-
-                # NEW CODE: start a LIVE session folder + log + metadata (NO VIDEO)
-                self._start_nonvideo_session(mode_tag="LIVE")      # New Code 12-30-2025
-                self.data_logging_enabled = True                   # New Code 12-30-2025
-
-                            # === NEW: write header into LIVE log ===
-                print('----------------------------------------------------------------------')
-                print(f'🧬 Mouse Info: {self.mouse_info}')
-                print(f"Session Information: {self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_LIVE")
-                print(f"Session Save Dir: {self.sess_dir}")
-                print('----------------------------------------------------------------------\n')
-
-                # OPTIONAL but strongly recommended: reset per-session arrays/counters for Live
-                self.trial_delays.clear()                          # New Code 12-30-2025
-                self.baseline_trials.clear()                       # New Code 12-30-2025
-                self.stim_allowed_trials.clear()                   # New Code 12-30-2025
-                self.washout_trials.clear()                        # New Code 12-30-2025
-                self.baseline_trials_tone2_aligned.clear()         # New Code 12-30-2025
-                self.stim_allowed_trials_tone2_aligned.clear()     # New Code 12-30-2025
-                self.washout_trials_tone2_aligned.clear()          # New Code 12-30-2025
-
-                # (If you want Live sessions to start from clean counters)
-                self.reachCount(event)                             # New Code 12-30-2025
-
                 self.camaq.value = 1
                 self.startAq()
+                
+                # --- Grant Hughes 8-19-2025
+                #self.liveTimer.Start(150)
                 self.liveTimer.Start(150)
+                # --- Grant Hughes 8-19-2025
 
+                
                 self.play.SetLabel('Stop')
-
+            self.rec.Enable(False)
             for h in self.disable4cam:
                 h.Enable(False)
-
         else:
             if self.liveTimer.IsRunning():
                 self.liveTimer.Stop()
-
-
-            # === NEW: 12-31-2025 stop logging ===
-            self.data_logging_enabled = False
-
-            # === NEW:  12-31-2025 print final summary INTO LOG ===
-            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-            if total_trial_count == 0:
-                total_trial_count = 1
-
-            print('\n\n')
-            print('───────────────────────────────────────────────')
-            print(f'📄 {self.sess_info} LIVE Summary')
-            print('───────────────────────────────────────────────')
-            print(f" #️⃣     Total Trials:          {total_trial_count}")
-            print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
-            print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
-            print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
-            print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
-            print('───────────────────────────────────────────────\n')
-
-            self._save_nonvideo_outputs(mode_tag="LIVE")           # New Code 12-30-2025
-
-            # NEW CODE (add immediately after entering else)
-            # self.data_logging_enabled = False   # New Code 12-30-2025
-            print("RECORD STOP")
-
+                # NEW CODE
+                self.data_logging_enabled = False  # New Code 12-30-2025
             self.stopAq()
             time.sleep(2)
             self.play.SetLabel('Live')
             self.rec.Enable(True)
             for h in self.disable4cam:
                 h.Enable(True)
-
         
     def pelletHandler(self, pim, roi):
         # events    0 - release pellet
@@ -1664,12 +1531,11 @@ class MainFrame(wx.Frame):
                     self._stim_armed = stim_allowed
                     
                     # Only log during active recording
-                    # if self.rec.GetValue():
-                    #     self.trial_delays.append(self.curr_trial_delay_ms)
-
-                    # NEW CODE 12-30-2025
-                    if self.data_logging_enabled:
+                    if self.data_logging_enabled: # new code 12-30-2025
+                                                # NEW CODE
+                        self.data_logging_enabled = True   # New Code 12-30-2025
                         self.trial_delays.append(self.curr_trial_delay_ms)
+
                     
                     # Log this trial's delay only once, at reveal time, grant hughes, 8-11-2025
                     #self.trial_delays.append(self.curr_trial_delay_ms)
@@ -1698,8 +1564,7 @@ class MainFrame(wx.Frame):
     
                             
                             # Only log during active recording (nested by epoch)
-                    # if self.rec.GetValue():  # New Code
-                    if self.data_logging_enabled:  # New Code 12-30-2025
+                        if self.data_logging_enabled: # new code 12-30-2025
                         total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
                         if block_index == 0:
                             self.baseline_trials.append(total_trial_count)
@@ -2075,10 +1940,8 @@ class MainFrame(wx.Frame):
             self.vidPlayer(event)
         
     def recordCam(self, event):
-        if self.rec.GetValue():
-            # NEW CODE 12-30-2025
-            self.data_logging_enabled = True
-            self.current_mode_tag = "REC"
+            if self.data_logging_enabled: # new code 12-30-2025
+
     
             # New Code: reset per-recording state that must not carry over
             if not hasattr(self, "trial_delays"):  # New Code
@@ -2100,7 +1963,6 @@ class MainFrame(wx.Frame):
                 self.baseline_trials_tone2_aligned.clear()
                 self.stim_allowed_trials_tone2_aligned.clear()
                 self.washout_trials_tone2_aligned.clear()
-
 
             self._need_new_delay_list = False     # New Code
             
@@ -2648,7 +2510,7 @@ class MainFrame(wx.Frame):
             if self.play.GetValue():
                 self.play.SetValue(False)
                 self.liveFeed(event)
-            if self.rec.GetValue():
+            if self.data_logging_enabled: # new code 12-30-2025
                 self.rec.SetValue(False)
                 self.recordCam(event)
             self.init.SetLabel('Enable')
@@ -2683,7 +2545,7 @@ class MainFrame(wx.Frame):
         if self.play.GetValue():
             self.play.SetValue(False)
             self.liveFeed(event)
-        if self.rec.GetValue():
+        if self.data_logging_enabled: # new code 12-30-2025
             self.rec.SetValue(False)
             self.recordCam(event)
         if self.init.GetValue():

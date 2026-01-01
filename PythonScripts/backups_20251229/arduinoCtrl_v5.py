@@ -26,9 +26,6 @@ class arduinoCtrl(Process):
         self.stim_selection = stim_selection
         self.del_style = del_style
         self.pellet_arrived = 0
-        self.show_extra_prints = False  # New Code GRANT 12-29-25,
-        
-
         
     def run(self):
         serSuccess = False
@@ -155,14 +152,14 @@ class arduinoCtrl(Process):
                     msg = 'R0x'
                     event = 'pellet_delivery'
                     print(round((self.frm.value-self.pellet_arrived)/0.150))
-                    #print(f'pellet delivered {self.frm.value}')
+                    print(f'pellet delivered {self.frm.value}')
                 elif comVal == 5:
                     msg = 'W' + str(self.stim_selection.value) + 'x'
                 elif comVal == 6:
                     msg = 'Fx'
                     event = 'pellet_detected'
                     self.pellet_arrived = self.frm.value
-                    #print(f'pellet_arrived{self.pellet_arrived}'),
+                    print(f'pellet_arrived{self.pellet_arrived}')
                 elif comVal == 7: # block ButtonStyleChange
                     msg = 'D0x'
                 elif comVal == 8: # allowButtonStyleChange
@@ -215,40 +212,20 @@ class arduinoCtrl(Process):
                             # pickleFile = open("pickle.txt", 'wb')
                             # pickle.dump(line, pickleFile)
                             # pickleFile.close()
+                            
 
                             if self.record and len(event):
                                 self.events.write("%s\t%s\n\r" % (event,self.frm.value))
-
                             if len(event):
-                               #print(f'recorded value for {event}: {self.frm.value}') # New Code GRANT 12-29-25,
-                                print('')  # New Code GRANT 12-29-25,
-
-
+                                print(f'recorded value for {event}: {self.frm.value}')
                             if self.record and stim_flag:                               # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
                                 self.events.write("stim_sent\t%s\n\r" % (stim_frame))  # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                               # print(f'recorded value for stim_sent: {stim_frame}')   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                       
-
-                                #print('%s in %d attempt(s)' % (line,attmpt))   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                
-        
+                                print(f'recorded value for stim_sent: {stim_frame}')   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
+                                print('/n')
+                            print('%s in %d attempt(s)' % (line,attmpt))
                             self.is_busy.value = 1;
                             self.com.value = 0
                             return
-
-
-                            # if self.record and len(event):
-                            #     self.events.write("%s\t%s\n\r" % (event,self.frm.value))
-                            # if len(event):
-                            #     print(f'recorded value for {event}: {self.frm.value}')
-                            # if self.record and stim_flag:                               # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                            #     self.events.write("stim_sent\t%s\n\r" % (stim_frame))  # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                            #     print(f'recorded value for stim_sent: {stim_frame}')   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                            #     print('/n')
-                            # print('%s in %d attempt(s)' % (line,attmpt))
-                            # self.is_busy.value = 1;
-                            # self.com.value = 0
-                            # return
                     except:
                         pass
             except:

@@ -1285,8 +1285,6 @@ class MainFrame(wx.Frame):
         self.meta['Stim'] = self.proto_str
         self.meta['StartTime'] = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.meta['Mode'] = mode_tag  # New Code
-        self.meta['MouseInfo'] = getattr(self, "mouse_info", "No mouse info provided")  # New Code 12-30-2025
-
 
         meta_name = f"{date_string}_{self.system_cfg['unitRef']}_{sess_string}_{mode_tag}_metadata.yaml"
         self.metapath = os.path.join(self.sess_dir, meta_name)
@@ -1337,21 +1335,6 @@ class MainFrame(wx.Frame):
 
         elif self.play.GetValue() == True:
             if not self.liveTimer.IsRunning():
-                # === NEW 12-31-25 : Mouse info dialog (same as Record) ===
-                dlg = wx.TextEntryDialog(
-                    self,
-                    'Enter mouse information (e.g. Mouse ID, genotype, surgery date):',
-                    'Mouse Info',
-                    ''
-                )
-                if dlg.ShowModal() == wx.ID_OK:
-                    self.mouse_info = dlg.GetValue().strip()
-                    if self.mouse_info == "":
-                        self.mouse_info = "No mouse info provided"
-                else:
-                    self.mouse_info = "Mouse info entry cancelled"
-                dlg.Destroy()
-
                 if not self.pellet_x == 0:
                     if not self.roi[0] == 0:
                         self.pellet_timing = time.time()
@@ -1360,13 +1343,6 @@ class MainFrame(wx.Frame):
                 # NEW CODE: start a LIVE session folder + log + metadata (NO VIDEO)
                 self._start_nonvideo_session(mode_tag="LIVE")      # New Code 12-30-2025
                 self.data_logging_enabled = True                   # New Code 12-30-2025
-
-                            # === NEW: write header into LIVE log ===
-                print('----------------------------------------------------------------------')
-                print(f'🧬 Mouse Info: {self.mouse_info}')
-                print(f"Session Information: {self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_LIVE")
-                print(f"Session Save Dir: {self.sess_dir}")
-                print('----------------------------------------------------------------------\n')
 
                 # OPTIONAL but strongly recommended: reset per-session arrays/counters for Live
                 self.trial_delays.clear()                          # New Code 12-30-2025
@@ -1386,6 +1362,7 @@ class MainFrame(wx.Frame):
 
                 self.play.SetLabel('Stop')
 
+            self.rec.Enable(False)
             for h in self.disable4cam:
                 h.Enable(False)
 
@@ -1393,27 +1370,8 @@ class MainFrame(wx.Frame):
             if self.liveTimer.IsRunning():
                 self.liveTimer.Stop()
 
-
-            # === NEW: 12-31-2025 stop logging ===
-            self.data_logging_enabled = False
-
-            # === NEW:  12-31-2025 print final summary INTO LOG ===
-            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-            if total_trial_count == 0:
-                total_trial_count = 1
-
-            print('\n\n')
-            print('───────────────────────────────────────────────')
-            print(f'📄 {self.sess_info} LIVE Summary')
-            print('───────────────────────────────────────────────')
-            print(f" #️⃣     Total Trials:          {total_trial_count}")
-            print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
-            print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
-            print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
-            print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
-            print('───────────────────────────────────────────────\n')
-
+            # NEW CODE: stop data logging + save non-video outputs
+            self.data_logging_enabled = False                      # New Code 12-30-2025
             self._save_nonvideo_outputs(mode_tag="LIVE")           # New Code 12-30-2025
 
             # NEW CODE (add immediately after entering else)
