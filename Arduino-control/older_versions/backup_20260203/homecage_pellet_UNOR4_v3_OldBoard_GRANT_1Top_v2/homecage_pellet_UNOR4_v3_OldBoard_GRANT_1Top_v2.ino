@@ -391,9 +391,7 @@ if (servoActive == true){                                  // New Code
       Serial.println("Switch X, Y, and Z: " + String(switchX) + " - " + String(switchY) + " - " + String(switchZ));
     }
     else if (rxChar == 'H'){ // Send steppers home
-      sendHome();                 // old code
-      delay(5);                   // New Code
-      setCylindoor();             // New Code  (close barrier whenever Home is pressed)
+      sendHome();
     }
     else if (rxChar == 'I'){// Set mouse X
       mouseX = msgInt;
@@ -887,20 +885,8 @@ void setServoPos(){
 }
 
 void setCylindoor(){
-  // old code: myservo_cy.writeMicroseconds(barrierHomeVal);
-  // old code: cylindoorState = 1;
-
-  if (!myservo_cy.attached()){          // New Code
-    myservo_cy.attach(servoPin_cy);     // New Code
-    while (!myservo_cy.attached()){     // New Code
-      delay(1);                         // New Code
-    }                                   // New Code
-  }                                     // New Code
-
-  myservo_cy.writeMicroseconds(barrierHomeVal);  // New Code
-  cylindoorState = 1;                             // New Code
-  servoSetTime = millis();                        // New Code (keeps detach-timer consistent)
-  servoActive = true;                             // New Code
+  myservo_cy.writeMicroseconds(barrierHomeVal);
+  cylindoorState = 1;
 }
 
 void crackCylindoor(){
