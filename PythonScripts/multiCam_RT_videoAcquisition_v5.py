@@ -142,6 +142,12 @@ class MainFrame(wx.Frame):
         self._need_new_delay_list = False #  Grant Hughes, 8-11-25 
         self.tone1_dur_ms = getattr(self, "tone1_dur_ms", 500)  # Grant Hughes, 8-11-25 , calibration, can move to user_cfg if desired
 
+        # NEW CODE — pellet confirmation
+        # New Code: robust pellet detection score (tolerates flicker)
+        self.pellet_detect_score = 0          # New Code
+        self.PELLET_SCORE_ON = 3              # New Code: how many hits required
+        self.PELLET_SCORE_MAX = 6             # New Code: cap
+
 
         
 # Settting the GUI size and panels design
@@ -340,7 +346,19 @@ class MainFrame(wx.Frame):
         self.trig_release = wx.Button(self.widget_panel, id=wx.ID_ANY, label="Release", size=(bw, -1))
         sersizer.Add(self.trig_release, pos=(vpos,9), span=(0,3), flag=wx.LEFT, border=wSpace)
         self.trig_release.Bind(wx.EVT_BUTTON, self.comFun)
-        
+
+        # ===================== NEW CODE =====================
+        # New Code: Training mode checkbox (put on a NEW ROW so it's visible)
+        self.training_mode = False  # New Code
+        vpos += 1  # New Code: move to next row so we don't use col=12
+
+        self.train_checkbox = wx.CheckBox(
+            self.widget_panel,
+            id=wx.ID_ANY,
+            label="Training mode (Tone-1 plays on M regardless of pellet)",
+        )
+        sersizer.Add(self.train_checkbox, pos=(vpos,0), span=(1,12), flag=wx.LEFT, border=wSpace)
+        self.train_checkbox.Bind(wx.EVT_CHECKBOX, self.onTrainingToggle)
 
         # -------------------- New Code: map keys H/P/M/R --- 12-14-2025 -----------------
         self.ID_KEY_HOME    = wx.NewIdRef().Id   # New Code
@@ -729,7 +747,9 @@ class MainFrame(wx.Frame):
 #         print(f"[StimTEST] armed  t0={self._stim_test_t0:.6f}  riseΔ={self._stim_test_delta}")
  
  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
-       
+    def onTrainingToggle(self, event):
+        self.training_mode = bool(self.train_checkbox.GetValue())
+
     def onKeepOpen(self, event):
         self.keep_open = self.keep_open_btn.GetValue()
     
@@ -932,8 +952,12 @@ class MainFrame(wx.Frame):
             self.com.value = 1
         elif self.load_pellet == evobj:
             self.com.value = 2
+        # New Code
         elif self.send_pellet == evobj:
-            self.com.value = 3
+            self.com.value = 3  # pellet delivery (Arduino: M0x) :contentReference[oaicite:1]{index=1}
+            if getattr(self, "training_mode", False):
+                # New Code: always play Tone-1 after the pellet command completes (no ROI gating)
+                self._queue_tone_after_arduino_ready(timeout_s=2.0, poll_ms=10)
         elif self.trig_release == evobj:
             self.com.value = 4
         elif self.tone_delay_min == evobj:
@@ -988,11 +1012,36 @@ class MainFrame(wx.Frame):
 
     def _hotkey_mouse(self, event):    # New Code
         self.com.value = 3            # New Code
+        if getattr(self, "training_mode", False):
+            # New Code: play tone only after Arduino finishes the pellet command
+            self._queue_tone_after_arduino_ready(timeout_s=2.0, poll_ms=10)
 
     def _hotkey_release(self, event):  # New Code
         self.com.value = 4            # New Code
-        
+        # New Code: helper to trigger tone AFTER Arduino finishes pellet command
+
+    def _queue_tone_after_arduino_ready(self, timeout_s=2.0, poll_ms=10):
+        """
+        Wait until Arduino is idle (pellet command finished), then send tone.
+        This avoids overwriting self.com.value and prevents race conditions.
+        """
+        t0 = time.time()
+
+        def poll():
+            # timeout safety
+            if (time.time() - t0) > timeout_s:
+                return
+
+            # Arduino idle AND command register clear
+            if self.is_busy.value == 0 and self.com.value == 0:
+                self.com.value = 6   # send tone ('t')
+                return
+
+            wx.CallLater(poll_ms, poll)
+
+        wx.CallLater(poll_ms, poll)
         # NEW CODE
+
     def _hotkey_init(self, event):
         # Toggle the Initialize button exactly as a click would
         new_state = not self.init.GetValue()
@@ -1481,14 +1530,21 @@ class MainFrame(wx.Frame):
             # checked 
             elif self.pellet_status == 1:
                 if self.del_style.value == 0:
+
+                                
                     if objDetected:
                         self.hand_timing = time.time()
                         self.pellet_timing = time.time()
                         self.pellet_status = 2
                         self.failCt = 0
-                        self.com.value = 6
-                        # 07-16-2025
+
+                        # NEW: suppress ROI-triggered tone in training mode
+                        if not getattr(self, "training_mode", False):
+                            self.com.value = 6
+
                         self.trial_line_printed = False
+
+
                     # checked
                     elif (time.time()-self.pellet_timing) > wait2detect:
                         self.failCt+=1
@@ -1595,6 +1651,7 @@ class MainFrame(wx.Frame):
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     self.total_trials = total_trial_count
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
+                    perecent_successful_reaches = (self.reach_number / total_trial_count) * 1
                     if self.check_delay.GetValue():
                             ## --- measure actual waiting ---
                             now_check = time.time()
@@ -1674,6 +1731,8 @@ class MainFrame(wx.Frame):
                           
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
+                    perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
+
                     #expected_delay = delayva
                     self.com.value = 4
                     if self.check_delay.GetValue():
@@ -1683,7 +1742,7 @@ class MainFrame(wx.Frame):
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
                    
-                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || ✔️Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
+                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
              
                     # if self.rec.GetValue():  # New Code
                     if self.data_logging_enabled:  # New Code 12-30-2025

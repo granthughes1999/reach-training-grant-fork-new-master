@@ -159,7 +159,7 @@ class arduinoCtrl(Process):
                 elif comVal == 5:
                     msg = 'W' + str(self.stim_selection.value) + 'x'
                 elif comVal == 6:
-                    msg = 't0x'
+                    msg = 'Fx'
                     event = 'pellet_detected'
                     self.pellet_arrived = self.frm.value
                     #print(f'pellet_arrived{self.pellet_arrived}'),
