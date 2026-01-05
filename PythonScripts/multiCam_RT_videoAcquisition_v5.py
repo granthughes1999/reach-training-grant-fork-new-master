@@ -1040,7 +1040,35 @@ class MainFrame(wx.Frame):
             wx.CallLater(poll_ms, poll)
 
         wx.CallLater(poll_ms, poll)
-        # NEW CODE
+
+    def _queue_com_sequence(self, seq, timeout_s=3.0, poll_ms=5, on_done=None):
+        """
+        Non-blocking: sends com commands in order only when Arduino is idle.
+        Calls on_done() exactly once when the sequence is finished.
+        """
+        seq = list(seq)
+        t0 = time.time()
+
+        def poll():
+            # timeout safety
+            if (time.time() - t0) > timeout_s:
+                return
+
+            # Sequence finished
+            if not seq:
+                if callable(on_done):
+                    on_done()
+                return
+
+            # Only send next command when idle and com register clear
+            if self.is_busy.value == 0 and self.com.value == 0:
+                self.com.value = seq.pop(0)
+
+            wx.CallLater(poll_ms, poll)
+
+        wx.CallLater(poll_ms, poll)
+
+
 
     def _hotkey_init(self, event):
         # Toggle the Initialize button exactly as a click would
@@ -1490,11 +1518,24 @@ class MainFrame(wx.Frame):
         # events    0 - release pellet
         #           1 - load pellet
         #           2 - waiting to lose it
+
+            
+        # New Code: ignore pellet logic while async reset is in progress
+        if self.pellet_status == -1:
+            return
         
         # 07-16-2025, grant, checking for pellet causing trial [1]
         if not hasattr(self, 'hand_timing'):
             self.hand_timing = time.time()
-            
+
+        # New Code: ignore pellet detection during post-reset cooldown
+        if getattr(self, "pellet_status", 0) == -1:  # New Code
+            if time.time() < getattr(self, "_pellet_ignore_until", 0):  # New Code
+                return  # New Code
+            # cooldown over: restart pellet cycle cleanly  # New Code
+            self.pellet_status = 0  # New Code
+            self.pellet_timing = time.time()  # New Code
+            self.pellet_confirm_frames = 0  # New Code            
      
         if self.com.value < 0:
             return
@@ -1812,13 +1853,21 @@ class MainFrame(wx.Frame):
                     self.stim_status.value = 0  # NEW CODE
                     self._stim_armed = False  # NEW CODE
 
-                self.com.value = 1  # NEW CODE  (Home)
-                while self.com.value > 0:
-                    time.sleep(0.01)
+                # New Code: prevent pellet timeout from starting before pellet delivery completes
+                self.pellet_status = -1  # New Code: temporary "do nothing" state during reset
 
-                self.com.value = 3  # NEW CODE  (Mouse)
-                while self.com.value > 0:
-                    time.sleep(0.01)
+                    # New Code: replace pellet_status=1 with a cooldown state
+                self.pellet_status = -1  # New Code
+                self._pellet_ignore_until = time.time() + 0.75  # New Code (tune 0.5–1.5s)
+                self.pellet_confirm_frames = 0  # New Code
+
+                def _after_reset_delivery():  # New Code
+                    self.pellet_timing = time.time()   # start wait2detect NOW
+                    self.pellet_status = 1             # now begin pellet-detection phase
+                    self.failCt = 0                    # optional, matches your normal flow
+
+                self._queue_com_sequence([1, 3], timeout_s=3.0, poll_ms=5, on_done=_after_reset_delivery)  # New Code
+
 
                 self.pellet_timing = time.time()  # NEW CODE
                 self.hand_timing = time.time()  # NEW CODE
@@ -1831,9 +1880,13 @@ class MainFrame(wx.Frame):
                     self.stim_status.value = 0
                     self._stim_armed = False  # New Code
                   
-                self.com.value = 2
-                while self.com.value > 0:
-                    time.sleep(0.01)
+                # self.com.value = 2
+                # while self.com.value > 0:
+                #     time.sleep(0.01)
+
+                # New Code: non-blocking com=2
+                self._queue_com_sequence([2], timeout_s=3.0, poll_ms=5)
+
                 self.pellet_status = 0
                 self.pellet_timing = time.time()
   
