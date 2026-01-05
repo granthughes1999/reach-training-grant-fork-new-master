@@ -443,17 +443,8 @@ class MainFrame(wx.Frame):
         sersizer.Add(self.auto_delay, pos=(vpos,6), span=(0,6), flag=wx.LEFT, border=wSpace)
         self.auto_delay.SetValue(0)
         self.auto_delay.Bind(wx.EVT_CHECKBOX, self.comFun)
-
-        # NEW CODE 01-05-26
-        vpos += 1  # NEW CODE 01-05-26
-        self.early_home_mouse_mode = wx.CheckBox(  # NEW CODE
-            self.widget_panel, id=wx.ID_ANY,
-            label="Early reach reset: Home↔Mouse (no new pellet)"
-        )  # NEW CODE
-        sersizer.Add(self.early_home_mouse_mode, pos=(vpos,6), span=(0,6), flag=wx.LEFT, border=wSpace)  # NEW CODE
-        self.early_home_mouse_mode.SetValue(False)  # NEW CODE
-        # NEW CODE 01-05-26
-
+        
+        
         # New Code 11-10-2025  ⟶ immediately after the block above, before `sersize = vpos`
         vpos+=1  # New Code
         self.block_size_ctrl = wx.SpinCtrl(self.widget_panel, value=str(20), size=(bw, -1))  # New Code
@@ -1464,7 +1455,6 @@ class MainFrame(wx.Frame):
         # checked 
         if self.is_busy.value == 0:
             getNewPellet = False
-            resetHomeMouseOnly = False    # NEW CODE 01-05-26
             if self.del_style.value == 0:
                 wait2detect = 2
             else: 
@@ -1586,11 +1576,8 @@ class MainFrame(wx.Frame):
 
                # 1) If paw is STILL in the hand-ROI, reset immediately
                 if roi >= self.system_cfg['handThreshold']:
-                    if hasattr(self, "early_home_mouse_mode") and self.early_home_mouse_mode.GetValue():
-                        resetHomeMouseOnly = True
-                    else:
-                        getNewPellet = True
-
+                    
+                    getNewPellet = True
                     self.trial_reset_count += 1
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     self.total_trials = total_trial_count
@@ -1601,9 +1588,9 @@ class MainFrame(wx.Frame):
                             elapsed_check = now_check - self.hand_timing
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
-                
-                    print(f"[{total_trial_count}] ⚠️   Delay {self.curr_trial_delay_ms} ms || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
-            
+                   
+                    print(f"[{total_trial_count}] ⚠️   Delay {self.curr_trial_delay_ms} ms || Early Reach Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+              
 
                 # 2) Paw is out of the hand-ROI → do your normal delay → reveal logic
                 else:
@@ -1633,9 +1620,17 @@ class MainFrame(wx.Frame):
                     
                 if reveal_pellet == True: # Reveal pellet
                     self.reach_number += 1
+                    # -- Grant Hughes, 8-15-2025 
+                    # -- Added single line bellow, trying to get stimROI to send TTL
                     self._stim_armed = True   # New Code
                     
-        
+                    # 9-29-2025, New Code gate stim arming by 20-trial blocks of Tone-2 successes
+                    #block_size = 5
+                   # block_index = (self.reach_number - 1) // block_size
+                    #stim_allowed = (block_index % 2 == 1)
+                    
+                    # New Code 11-10-25
+                    # Gate stim arming by N-trial blocks from GUI
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
                     self.block_size_logging = block_size
                     block_index = (self.reach_number - 1) // block_size  # New Code
@@ -1667,14 +1662,21 @@ class MainFrame(wx.Frame):
                                         # New Code 11-10-25
 
                     self._stim_armed = stim_allowed
+                    
+                    # Only log during active recording
+                    # if self.rec.GetValue():
+                    #     self.trial_delays.append(self.curr_trial_delay_ms)
 
                     # NEW CODE 12-30-2025
                     if self.data_logging_enabled:
                         self.trial_delays.append(self.curr_trial_delay_ms)
-                          
+                    
+                    # Log this trial's delay only once, at reveal time, grant hughes, 8-11-2025
+                    #self.trial_delays.append(self.curr_trial_delay_ms)
+                    
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
-                    #expected_delay = delayva
+                    #expected_delay = delayval
                     self.com.value = 4
                     if self.check_delay.GetValue():
                             ## --- measure actual waiting ---
@@ -1683,8 +1685,19 @@ class MainFrame(wx.Frame):
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
                    
-                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || ✔️Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
-             
+                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Tone-2 Success Count: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+                   
+                    # Only log during active recording
+                    #if self.rec.GetValue():
+                        #if stim_allowed:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.stim_allowed_trials.append(total_trial_count)
+                        #else:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.washout_trials.append(total_trial_count)
+    
+                            
+                            # Only log during active recording (nested by epoch)
                     # if self.rec.GetValue():  # New Code
                     if self.data_logging_enabled:  # New Code 12-30-2025
                         total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
@@ -1730,7 +1743,36 @@ class MainFrame(wx.Frame):
                     
             elif self.pellet_status == 3: # Test whether to get new pellet
             
-        
+            
+                # # ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+                
+                # #--------- Grant Gughes, 08-15-2025  
+                # #--------- Working on getting a StimROI TTL to send an actual TTL
+                
+                # if self.auto_stim.GetValue():
+                #     # grab stim ROI mean the same way inspect_stim prints it
+                #     ndx = self.axes.index(self.stimAxes)
+                #     stim_cpt = self.stimroi
+                #     stim_val = self.frame[ndx][stim_cpt[2]:stim_cpt[2]+stim_cpt[3],
+                #                                 stim_cpt[0]:stim_cpt[0]+stim_cpt[1]].mean()
+                    
+                # # New Code, 8-18-2025
+                #     thr = self.system_cfg.get('stimulusThreshold', self.system_cfg.get('stimThreshold', 300))
+                    
+                #     #print(f"[StimDBG] threshold={thr}  roi_mean={stim_val:.1f}  armed={getattr(self,'_stim_armed', False)}")
+
+                #     if (stim_val >= thr) and getattr(self, '_stim_armed', False):
+                #         #print('\n\n  -- stimulusThreshold PASSED --\n\n')  # New Code
+                #         #print(f"[stimTTL] val={stim_val:.1f} thr={thr} armed={self._stim_armed}")  # New Code
+                #         # self.com.value = 16  # New Code → arduinoCtrl sends 'S' → main .ino pulses pin 12 for ~5 ms
+                #         # while self.com.value > 0:  # New Code
+                #         #     time.sleep(0.01)       # New Code
+                #         self._stim_armed = False   # New Code  fire once per reveal
+                                                            
+                # # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+                
+                
+                
                 if not objDetected:
                     if (time.time()-self.delivery_delay) > self.user_cfg['minTime2Eat']:
                         getNewPellet = True
@@ -1744,32 +1786,16 @@ class MainFrame(wx.Frame):
                     self.pellet_status = 3
                 elif (time.time()-self.pellet_timing) > wait2detect:
                     getNewPellet = True
-
-            # NEW CODE 01-05-26
-            if resetHomeMouseOnly:  # NEW CODE 01-05-26
-                self.trial_line_printed = False  # NEW CODE
-
-                if self.auto_stim.GetValue() and self.proto_str == 'First Reach':  # NEW CODE
-                    self.stim_status.value = 0  # NEW CODE
-                    self._stim_armed = False  # NEW CODE
-
-                self.com.value = 1  # NEW CODE  (Home)
-                while self.com.value > 0:
-                    time.sleep(0.01)
-
-                self.com.value = 3  # NEW CODE  (Mouse)
-                while self.com.value > 0:
-                    time.sleep(0.01)
-
-                self.pellet_timing = time.time()  # NEW CODE
-                self.hand_timing = time.time()  # NEW CODE
-                self.delivery_delay = time.time()  # NEW CODE
-                self.pellet_status = 1  # NEW CODE 
-
-            elif getNewPellet:
+                    
+                
+            if getNewPellet:
                 self.trial_line_printed = False  # ✅ MOVE IT HERE
                 if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
                     self.stim_status.value = 0
+                    # ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+                    
+                    #--------- Grant Gughes, 08-15-2025  
+                    #--------- Working on getting a StimROI TTL to send an actual TTL
                     self._stim_armed = False  # New Code
                   
                 self.com.value = 2
@@ -1778,6 +1804,19 @@ class MainFrame(wx.Frame):
                 self.pellet_status = 0
                 self.pellet_timing = time.time()
   
+                  
+              # ---- only reload/close the door if “Keep door open” is FALSE ----
+              #if not getattr(self, 'keep_open', False):
+                  # existing reload logic
+                  #self.com.value = 2
+                  #while self.com.value > 0:
+                      #time.sleep(0.01)
+                  #self.pellet_status = 0
+                  #self.pellet_timing = time.time()
+              #else:
+         
+                  #self.pellet_status = 0
+                  #self.pellet_timing = time.time()
     
     
             
