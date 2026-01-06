@@ -148,16 +148,8 @@ class MainFrame(wx.Frame):
         self.PELLET_SCORE_ON = 3              # New Code: how many hits required
         self.PELLET_SCORE_MAX = 6             # New Code: cap
 
-# OLD CODE
-# (no early reset streak variables)
 
-        # NEW CODE  (add in __init__, near other counters like reach_number, trial_reset_count)
-        self.early_reset_streak = 0            # New Code: consecutive early-reach resets
-        self.early_reset_penalty_every = 5     # New Code: apply penalty every N consecutive resets
-        self.early_reset_penalty_s = 30.0      # New Code: penalty duration (seconds) at home
-        self.early_reset_home_pause_s = 3.0    # New Code: required pause at home before returning to mouse
-
-            
+        
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
         screenSizes = [display.GetGeometry().GetSize() for display in displays] # Gets the size of each display
@@ -1048,78 +1040,35 @@ class MainFrame(wx.Frame):
             wx.CallLater(poll_ms, poll)
 
         wx.CallLater(poll_ms, poll)
-
+    # New Code
     def _queue_com_sequence(self, seq, timeout_s=3.0, poll_ms=5, on_done=None):
         """
         Non-blocking: sends com commands in order only when Arduino is idle.
+        Supports delay steps: ("delay", milliseconds)
         Calls on_done() exactly once when the sequence is finished.
         """
         seq = list(seq)
         t0 = time.time()
 
         def poll():
-            # timeout safety
             if (time.time() - t0) > timeout_s:
                 return
 
-            # Sequence finished
-            # NEW CODE
-            if not seq:
-                # Only declare "done" when Arduino is idle and com register is clear
-                if self.is_busy.value == 0 and self.com.value == 0:
-                    if callable(on_done):
-                        on_done()
-                    return
-                wx.CallLater(poll_ms, poll)
-                return
-
-            # Only send next command when idle and com register clear
-            if self.is_busy.value == 0 and self.com.value == 0:
-                self.com.value = seq.pop(0)
-
-            wx.CallLater(poll_ms, poll)
-
-        wx.CallLater(poll_ms, poll)
-
-    # NEW CODE  (paste directly below _queue_com_sequence)
-    def _queue_com_sequence_timed(self, seq, timeout_s=60.0, poll_ms=5, on_done=None):
-        """
-        Like _queue_com_sequence, but seq can contain:
-        - int: Arduino com command
-        - ('wait', seconds): GUI-timer wait between commands (no blocking)
-        """
-        seq = list(seq)
-        t0 = time.time()
-        waiting = {"active": False}
-
-        def poll():
-            # timeout safety
-            if (time.time() - t0) > timeout_s:
-                return
-
-            # finished
             if not seq:
                 if callable(on_done):
                     on_done()
                 return
 
-            item = seq[0]
+            step = seq[0]
 
-            # timed wait item
-            if isinstance(item, tuple) and len(item) == 2 and item[0] == "wait":
-                if not waiting["active"]:
-                    waiting["active"] = True
-                    wait_ms = int(float(item[1]) * 1000)
-
-                    def _after_wait():
-                        waiting["active"] = False
-                        seq.pop(0)
-                        wx.CallLater(poll_ms, poll)
-
-                    wx.CallLater(wait_ms, _after_wait)
+            # Delay step
+            if isinstance(step, tuple) and len(step) == 2 and step[0] == "delay":
+                delay_ms = int(step[1])
+                seq.pop(0)
+                wx.CallLater(delay_ms, poll)
                 return
 
-            # com command item
+            # Normal com command step
             if self.is_busy.value == 0 and self.com.value == 0:
                 self.com.value = int(seq.pop(0))
 
@@ -1577,24 +1526,29 @@ class MainFrame(wx.Frame):
         #           1 - load pellet
         #           2 - waiting to lose it
 
-            
-        # New Code: ignore pellet logic while async reset is in progress
-        if self.pellet_status == -1:
-            return
-        
-        # 07-16-2025, grant, checking for pellet causing trial [1]
-        if not hasattr(self, 'hand_timing'):
-            self.hand_timing = time.time()
+                # old code
+        getNewPellet = False
+        resetHomeMouseOnly = False    # NEW CODE 01-05-26
 
-        # New Code: ignore pellet detection during post-reset cooldown
+        # New Code  (ADD RIGHT HERE)
+        if not hasattr(self, "early_reset_streak"):             # New Code
+            self.early_reset_streak = 0                         # New Code
+
+            
+
+        # New Code (REPLACE WITH THIS)
         if getattr(self, "pellet_status", 0) == -1:  # New Code
             if time.time() < getattr(self, "_pellet_ignore_until", 0):  # New Code
                 return  # New Code
             # cooldown over: restart pellet cycle cleanly  # New Code
             self.pellet_status = 0  # New Code
             self.pellet_timing = time.time()  # New Code
-            self.pellet_confirm_frames = 0  # New Code            
-     
+            self.pellet_confirm_frames = 0  # New Code
+
+        # New Code (REPLACE WITH THIS)
+        if not hasattr(self, 'hand_timing'):               # New Code
+            self.hand_timing = time.time()                # New Code
+
         if self.com.value < 0:
             return
         objDetected = False
@@ -1671,8 +1625,6 @@ class MainFrame(wx.Frame):
                                 time.sleep(d)
                         else:
                             getNewPellet = True
-                            self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
                             
                 else:
                     self.hand_timing = time.time()
@@ -1683,7 +1635,7 @@ class MainFrame(wx.Frame):
             
             elif self.pellet_status == 2:
                 reveal_pellet = False
-                
+
                 
                 # Grant 07-08 ─── Compute remaining time once ───
                 if getattr(self, 'record_start_time', None) is not None:
@@ -1696,15 +1648,6 @@ class MainFrame(wx.Frame):
                     m = 0
                     s = 0
                     
-                    
-                                    
-                #if int(self.delay_count.GetValue()) == 1:
-                    #delayval = int(self.tone_delay_min.GetValue()) / 1000
-                    #self.curr_trial_delay_ms = int(self.tone_delay_min.GetValue())
-                  
-                #else:
-                    #delayval = self.delay_values[0] / 1000
-                    #self.curr_trial_delay_ms = int(self.delay_values[0])
                     
                 # Grant Hughes, 8-11-2025,
                 if int(self.delay_count.GetValue()) == 1:
@@ -1737,68 +1680,59 @@ class MainFrame(wx.Frame):
                     print(f"HandROI Set Threshold: {set_thresh}   //   Per Trial Threshold= {current_val:.1f},   //   Value from trial reset= {diff:.1f}")
                 reveal_pellet = False
                 
-               
-                              
-
-
-               # 1) If paw is STILL in the hand-ROI, reset immediately
+                            
+                # New Code (REPLACE ENTIRE REGION WITH THIS)
                 if roi >= self.system_cfg['handThreshold']:
-                    if hasattr(self, "early_home_mouse_mode") and self.early_home_mouse_mode.GetValue():
-                        resetHomeMouseOnly = True
-                    else:
-                        getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
 
+                    # Count consecutive early resets
+                    self.early_reset_streak += 1
 
-                    self.early_reset_streak += 1   # New Code: consecutive early resets
+                    # 5 consecutive => timeout at Home
+                    timeout_ms = 30000 if self.early_reset_streak >= 5 else 0
+                    if timeout_ms == 30000:
+                        self.early_reset_streak = 0
+
+                    # Do we need pellet load on reset?
+                    early_home_only = (hasattr(self, "early_home_mouse_mode") and self.early_home_mouse_mode.GetValue())
+                    need_load = (not early_home_only)
+
+                    # Force into reset executor
+                    resetHomeMouseOnly = True
+
+                    # Store parameters for executor
+                    self._early_reset_timeout_ms = timeout_ms
+                    self._early_reset_need_load = need_load
+
+                    # Count this reset
                     self.trial_reset_count += 1
 
-                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                    self.total_trials = total_trial_count
-                    perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
-                    perecent_successful_reaches = (self.reach_number / total_trial_count) * 1
-                    if self.check_delay.GetValue():
-                            ## --- measure actual waiting ---
-                            now_check = time.time()
-                            elapsed_check = now_check - self.hand_timing
-        #                     Log both intended and actual
-                            print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
-                
-                    print(f"[{total_trial_count}] ⚠️   Delay {self.curr_trial_delay_ms} ms || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
-            
-
-                # 2) Paw is out of the hand-ROI → do your normal delay → reveal logic
+               # New Code (REPLACE YOUR CURRENT else: BODY WITH THIS)
                 else:
+                    # Paw out of ROI: streak broken
+                    self.early_reset_streak = 0
+
                     # Non-delayed mode
                     if not self.auto_delay.GetValue():
-                        #if (time.time() - self.hand_timing) > self.user_cfg['waitAfterHand']:
                         reveal_pellet = True
-                        if reveal_pellet:
-                            self.early_reset_streak = 0   # New Code
 
                     # Auto-delay mode
-    
                     if self.hand_timing is not None:
                         if (time.time() - self.hand_timing) > delayval:
-                            # rotate delays and reset if we've cycled
-                            difference = time.time() - self.hand_timing
                             self.delay_values = np.roll(self.delay_values, shift=-1)
                             if self.first_delay == self.delay_values[0]:
-                                self._need_new_delay_list = True   # Grant Hughes, 8-11-25, defer remake until after we log the reveal
-                                # self.make_delay_iters()  # Grant Hughes, 8-11-25,
+                                self._need_new_delay_list = True
                             reveal_pellet = True
-                            if reveal_pellet:
-                                self.early_reset_streak = 0   # New Code
+
                     # Failsafe: if something goes really wrong, reset after maxWait
                     if (time.time() - self.pellet_timing) > self.user_cfg['maxWait4Hand']:
                         getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
 
                     
                 if reveal_pellet == True: # Reveal pellet
                     self.reach_number += 1
                     self._stim_armed = True   # New Code
+                    self.early_reset_streak = 0   # New Code (success breaks the consecutive reset streak)
+
                     
         
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
@@ -1901,12 +1835,9 @@ class MainFrame(wx.Frame):
                 if not objDetected:
                     if (time.time()-self.delivery_delay) > self.user_cfg['minTime2Eat']:
                         getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
                 elif (time.time()-self.delivery_delay) > self.user_cfg['maxTime2Eat']:
                     getNewPellet = True
-                    self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
+                    
                     
             elif self.pellet_status == 4: #style B object detection listener
                 if objDetected:
@@ -1914,56 +1845,57 @@ class MainFrame(wx.Frame):
                     self.pellet_status = 3
                 elif (time.time()-self.pellet_timing) > wait2detect:
                     getNewPellet = True
-                    self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
 
+            # NEW CODE 01-05-26
             if resetHomeMouseOnly:  # NEW CODE 01-05-26
-                self.trial_line_printed = False
+                self.trial_line_printed = False  # NEW CODE
 
-                if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
-                    self.stim_status.value = 0
-                    self._stim_armed = False
+                if self.auto_stim.GetValue() and self.proto_str == 'First Reach':  # NEW CODE
+                    self.stim_status.value = 0  # NEW CODE
+                    self._stim_armed = False  # NEW CODE
 
-                # consecutive early-reset penalty: trigger on 5,10,15,... consecutive early resets
-                penalty_trigger = (self.early_reset_streak > 0) and (self.early_reset_streak % self.early_reset_penalty_every == 0)
-                penalty_s = self.early_reset_penalty_s if penalty_trigger else 0.0
+                # New Code: prevent pellet timeout from starting before pellet delivery completes
+                self.pellet_status = -1  # New Code: temporary "do nothing" state during reset
 
-                # hold pelletHandler state machine while motion runs
-                self.pellet_status = -1
-                self.pellet_confirm_frames = 0
+                # New Code: replace pellet_status=1 with a cooldown state
+                self._pellet_ignore_until = time.time() + 0.75  # New Code (tune 0.5–1.5s)
+                self.pellet_confirm_frames = 0  # New Code
 
-                def _after_reset_delivery():
-                    self._pellet_ignore_until = time.time() + 0.75
-                    self.failCt = 0
-                    self.hand_timing = time.time()
-                    self.delivery_delay = time.time()
+                def _after_reset_delivery():  # New Code
+                    self.pellet_timing = time.time()  # New Code
+                    self.hand_timing = time.time()  # New Code
+                    self.delivery_delay = time.time()  # New Code
+                    self.pellet_status = 1  # New Code
+                    self.failCt = 0  # New Code
 
-                    # already at Mouse due to seq ending with com=3
-                    self.pellet_timing = time.time()
-                    self.pellet_status = 1
+                # New Code (Option A)
+                timeout_ms = int(getattr(self, "_early_reset_timeout_ms", 0))          # New Code
+                need_load  = bool(getattr(self, "_early_reset_need_load", False))      # New Code
 
-                # NEW CODE (what you want)
-                seq = [
-                    1, ("wait", penalty_s + self.early_reset_home_pause_s),  # Home + (30s if triggered) + 3s always
-                    3,                                                       # then go to Mouse
-                ]
+                seq = [1]  # New Code: Home first
+                if timeout_ms > 0:
+                    seq.append(("delay", timeout_ms))  # New Code: 30s on 5th consecutive
 
-                self._queue_com_sequence_timed(seq, timeout_s=120.0, poll_ms=5, on_done=_after_reset_delivery)
-                return
-                    
+                if need_load:
+                    seq.append(2)  # New Code: load pellet if needed
+
+                seq.append(("delay", 3000))  # New Code: ALWAYS 3s between early resets
+                seq.append(3)  # New Code: Mouse
+
+                self._queue_com_sequence(seq, timeout_s=60.0, poll_ms=5, on_done=_after_reset_delivery)  # New Code
+
+            # New Code (MUST BE elif AT SAME INDENT LEVEL AS if resetHomeMouseOnly)
             elif getNewPellet:
                 self.trial_line_printed = False
-
                 if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
                     self.stim_status.value = 0
                     self._stim_armed = False
 
-                # dispense new pellet (non-blocking)
                 self._queue_com_sequence([2], timeout_s=3.0, poll_ms=5)
 
-                # restart pellet state machine
                 self.pellet_status = 0
                 self.pellet_timing = time.time()
-  
+
     
     
             

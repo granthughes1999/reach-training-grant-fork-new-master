@@ -142,22 +142,8 @@ class MainFrame(wx.Frame):
         self._need_new_delay_list = False #  Grant Hughes, 8-11-25 
         self.tone1_dur_ms = getattr(self, "tone1_dur_ms", 500)  # Grant Hughes, 8-11-25 , calibration, can move to user_cfg if desired
 
-        # NEW CODE — pellet confirmation
-        # New Code: robust pellet detection score (tolerates flicker)
-        self.pellet_detect_score = 0          # New Code
-        self.PELLET_SCORE_ON = 3              # New Code: how many hits required
-        self.PELLET_SCORE_MAX = 6             # New Code: cap
 
-# OLD CODE
-# (no early reset streak variables)
-
-        # NEW CODE  (add in __init__, near other counters like reach_number, trial_reset_count)
-        self.early_reset_streak = 0            # New Code: consecutive early-reach resets
-        self.early_reset_penalty_every = 5     # New Code: apply penalty every N consecutive resets
-        self.early_reset_penalty_s = 30.0      # New Code: penalty duration (seconds) at home
-        self.early_reset_home_pause_s = 3.0    # New Code: required pause at home before returning to mouse
-
-            
+        
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
         screenSizes = [display.GetGeometry().GetSize() for display in displays] # Gets the size of each display
@@ -354,19 +340,7 @@ class MainFrame(wx.Frame):
         self.trig_release = wx.Button(self.widget_panel, id=wx.ID_ANY, label="Release", size=(bw, -1))
         sersizer.Add(self.trig_release, pos=(vpos,9), span=(0,3), flag=wx.LEFT, border=wSpace)
         self.trig_release.Bind(wx.EVT_BUTTON, self.comFun)
-
-        # ===================== NEW CODE =====================
-        # New Code: Training mode checkbox (put on a NEW ROW so it's visible)
-        self.training_mode = False  # New Code
-        vpos += 1  # New Code: move to next row so we don't use col=12
-
-        self.train_checkbox = wx.CheckBox(
-            self.widget_panel,
-            id=wx.ID_ANY,
-            label="Training mode (Tone-1 plays on M regardless of pellet)",
-        )
-        sersizer.Add(self.train_checkbox, pos=(vpos,0), span=(1,12), flag=wx.LEFT, border=wSpace)
-        self.train_checkbox.Bind(wx.EVT_CHECKBOX, self.onTrainingToggle)
+        
 
         # -------------------- New Code: map keys H/P/M/R --- 12-14-2025 -----------------
         self.ID_KEY_HOME    = wx.NewIdRef().Id   # New Code
@@ -469,17 +443,8 @@ class MainFrame(wx.Frame):
         sersizer.Add(self.auto_delay, pos=(vpos,6), span=(0,6), flag=wx.LEFT, border=wSpace)
         self.auto_delay.SetValue(0)
         self.auto_delay.Bind(wx.EVT_CHECKBOX, self.comFun)
-
-        # NEW CODE 01-05-26
-        vpos += 1  # NEW CODE 01-05-26
-        self.early_home_mouse_mode = wx.CheckBox(  # NEW CODE
-            self.widget_panel, id=wx.ID_ANY,
-            label="Early reach reset: Home↔Mouse (no new pellet)"
-        )  # NEW CODE
-        sersizer.Add(self.early_home_mouse_mode, pos=(vpos,6), span=(0,6), flag=wx.LEFT, border=wSpace)  # NEW CODE
-        self.early_home_mouse_mode.SetValue(False)  # NEW CODE
-        # NEW CODE 01-05-26
-
+        
+        
         # New Code 11-10-2025  ⟶ immediately after the block above, before `sersize = vpos`
         vpos+=1  # New Code
         self.block_size_ctrl = wx.SpinCtrl(self.widget_panel, value=str(20), size=(bw, -1))  # New Code
@@ -755,9 +720,7 @@ class MainFrame(wx.Frame):
 #         print(f"[StimTEST] armed  t0={self._stim_test_t0:.6f}  riseΔ={self._stim_test_delta}")
  
  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
-    def onTrainingToggle(self, event):
-        self.training_mode = bool(self.train_checkbox.GetValue())
-
+       
     def onKeepOpen(self, event):
         self.keep_open = self.keep_open_btn.GetValue()
     
@@ -960,12 +923,8 @@ class MainFrame(wx.Frame):
             self.com.value = 1
         elif self.load_pellet == evobj:
             self.com.value = 2
-        # New Code
         elif self.send_pellet == evobj:
-            self.com.value = 3  # pellet delivery (Arduino: M0x) :contentReference[oaicite:1]{index=1}
-            if getattr(self, "training_mode", False):
-                # New Code: always play Tone-1 after the pellet command completes (no ROI gating)
-                self._queue_tone_after_arduino_ready(timeout_s=2.0, poll_ms=10)
+            self.com.value = 3
         elif self.trig_release == evobj:
             self.com.value = 4
         elif self.tone_delay_min == evobj:
@@ -1020,114 +979,11 @@ class MainFrame(wx.Frame):
 
     def _hotkey_mouse(self, event):    # New Code
         self.com.value = 3            # New Code
-        if getattr(self, "training_mode", False):
-            # New Code: play tone only after Arduino finishes the pellet command
-            self._queue_tone_after_arduino_ready(timeout_s=2.0, poll_ms=10)
 
     def _hotkey_release(self, event):  # New Code
         self.com.value = 4            # New Code
-        # New Code: helper to trigger tone AFTER Arduino finishes pellet command
-
-    def _queue_tone_after_arduino_ready(self, timeout_s=2.0, poll_ms=10):
-        """
-        Wait until Arduino is idle (pellet command finished), then send tone.
-        This avoids overwriting self.com.value and prevents race conditions.
-        """
-        t0 = time.time()
-
-        def poll():
-            # timeout safety
-            if (time.time() - t0) > timeout_s:
-                return
-
-            # Arduino idle AND command register clear
-            if self.is_busy.value == 0 and self.com.value == 0:
-                self.com.value = 6   # send tone ('t')
-                return
-
-            wx.CallLater(poll_ms, poll)
-
-        wx.CallLater(poll_ms, poll)
-
-    def _queue_com_sequence(self, seq, timeout_s=3.0, poll_ms=5, on_done=None):
-        """
-        Non-blocking: sends com commands in order only when Arduino is idle.
-        Calls on_done() exactly once when the sequence is finished.
-        """
-        seq = list(seq)
-        t0 = time.time()
-
-        def poll():
-            # timeout safety
-            if (time.time() - t0) > timeout_s:
-                return
-
-            # Sequence finished
-            # NEW CODE
-            if not seq:
-                # Only declare "done" when Arduino is idle and com register is clear
-                if self.is_busy.value == 0 and self.com.value == 0:
-                    if callable(on_done):
-                        on_done()
-                    return
-                wx.CallLater(poll_ms, poll)
-                return
-
-            # Only send next command when idle and com register clear
-            if self.is_busy.value == 0 and self.com.value == 0:
-                self.com.value = seq.pop(0)
-
-            wx.CallLater(poll_ms, poll)
-
-        wx.CallLater(poll_ms, poll)
-
-    # NEW CODE  (paste directly below _queue_com_sequence)
-    def _queue_com_sequence_timed(self, seq, timeout_s=60.0, poll_ms=5, on_done=None):
-        """
-        Like _queue_com_sequence, but seq can contain:
-        - int: Arduino com command
-        - ('wait', seconds): GUI-timer wait between commands (no blocking)
-        """
-        seq = list(seq)
-        t0 = time.time()
-        waiting = {"active": False}
-
-        def poll():
-            # timeout safety
-            if (time.time() - t0) > timeout_s:
-                return
-
-            # finished
-            if not seq:
-                if callable(on_done):
-                    on_done()
-                return
-
-            item = seq[0]
-
-            # timed wait item
-            if isinstance(item, tuple) and len(item) == 2 and item[0] == "wait":
-                if not waiting["active"]:
-                    waiting["active"] = True
-                    wait_ms = int(float(item[1]) * 1000)
-
-                    def _after_wait():
-                        waiting["active"] = False
-                        seq.pop(0)
-                        wx.CallLater(poll_ms, poll)
-
-                    wx.CallLater(wait_ms, _after_wait)
-                return
-
-            # com command item
-            if self.is_busy.value == 0 and self.com.value == 0:
-                self.com.value = int(seq.pop(0))
-
-            wx.CallLater(poll_ms, poll)
-
-        wx.CallLater(poll_ms, poll)
-
-
+        
+        # NEW CODE
     def _hotkey_init(self, event):
         # Toggle the Initialize button exactly as a click would
         new_state = not self.init.GetValue()
@@ -1576,24 +1432,11 @@ class MainFrame(wx.Frame):
         # events    0 - release pellet
         #           1 - load pellet
         #           2 - waiting to lose it
-
-            
-        # New Code: ignore pellet logic while async reset is in progress
-        if self.pellet_status == -1:
-            return
         
         # 07-16-2025, grant, checking for pellet causing trial [1]
         if not hasattr(self, 'hand_timing'):
             self.hand_timing = time.time()
-
-        # New Code: ignore pellet detection during post-reset cooldown
-        if getattr(self, "pellet_status", 0) == -1:  # New Code
-            if time.time() < getattr(self, "_pellet_ignore_until", 0):  # New Code
-                return  # New Code
-            # cooldown over: restart pellet cycle cleanly  # New Code
-            self.pellet_status = 0  # New Code
-            self.pellet_timing = time.time()  # New Code
-            self.pellet_confirm_frames = 0  # New Code            
+            
      
         if self.com.value < 0:
             return
@@ -1612,7 +1455,6 @@ class MainFrame(wx.Frame):
         # checked 
         if self.is_busy.value == 0:
             getNewPellet = False
-            resetHomeMouseOnly = False    # NEW CODE 01-05-26
             if self.del_style.value == 0:
                 wait2detect = 2
             else: 
@@ -1629,21 +1471,14 @@ class MainFrame(wx.Frame):
             # checked 
             elif self.pellet_status == 1:
                 if self.del_style.value == 0:
-
-                                
                     if objDetected:
                         self.hand_timing = time.time()
                         self.pellet_timing = time.time()
                         self.pellet_status = 2
                         self.failCt = 0
-
-                        # NEW: suppress ROI-triggered tone in training mode
-                        if not getattr(self, "training_mode", False):
-                            self.com.value = 6
-
+                        self.com.value = 6
+                        # 07-16-2025
                         self.trial_line_printed = False
-
-
                     # checked
                     elif (time.time()-self.pellet_timing) > wait2detect:
                         self.failCt+=1
@@ -1671,8 +1506,6 @@ class MainFrame(wx.Frame):
                                 time.sleep(d)
                         else:
                             getNewPellet = True
-                            self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
                             
                 else:
                     self.hand_timing = time.time()
@@ -1743,38 +1576,29 @@ class MainFrame(wx.Frame):
 
                # 1) If paw is STILL in the hand-ROI, reset immediately
                 if roi >= self.system_cfg['handThreshold']:
-                    if hasattr(self, "early_home_mouse_mode") and self.early_home_mouse_mode.GetValue():
-                        resetHomeMouseOnly = True
-                    else:
-                        getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
-
-                    self.early_reset_streak += 1   # New Code: consecutive early resets
+                    
+                    getNewPellet = True
                     self.trial_reset_count += 1
-
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     self.total_trials = total_trial_count
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
-                    perecent_successful_reaches = (self.reach_number / total_trial_count) * 1
                     if self.check_delay.GetValue():
                             ## --- measure actual waiting ---
                             now_check = time.time()
                             elapsed_check = now_check - self.hand_timing
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
-                
-                    print(f"[{total_trial_count}] ⚠️   Delay {self.curr_trial_delay_ms} ms || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
-            
+                   
+                    print(f"[{total_trial_count}] ⚠️   Delay {self.curr_trial_delay_ms} ms || Early Reach Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+              
 
                 # 2) Paw is out of the hand-ROI → do your normal delay → reveal logic
                 else:
                     # Non-delayed mode
                     if not self.auto_delay.GetValue():
                         #if (time.time() - self.hand_timing) > self.user_cfg['waitAfterHand']:
+
                         reveal_pellet = True
-                        if reveal_pellet:
-                            self.early_reset_streak = 0   # New Code
 
                     # Auto-delay mode
     
@@ -1787,20 +1611,26 @@ class MainFrame(wx.Frame):
                                 self._need_new_delay_list = True   # Grant Hughes, 8-11-25, defer remake until after we log the reveal
                                 # self.make_delay_iters()  # Grant Hughes, 8-11-25,
                             reveal_pellet = True
-                            if reveal_pellet:
-                                self.early_reset_streak = 0   # New Code
+
                     # Failsafe: if something goes really wrong, reset after maxWait
                     if (time.time() - self.pellet_timing) > self.user_cfg['maxWait4Hand']:
                         getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
+                    
 
                     
                 if reveal_pellet == True: # Reveal pellet
                     self.reach_number += 1
+                    # -- Grant Hughes, 8-15-2025 
+                    # -- Added single line bellow, trying to get stimROI to send TTL
                     self._stim_armed = True   # New Code
                     
-        
+                    # 9-29-2025, New Code gate stim arming by 20-trial blocks of Tone-2 successes
+                    #block_size = 5
+                   # block_index = (self.reach_number - 1) // block_size
+                    #stim_allowed = (block_index % 2 == 1)
+                    
+                    # New Code 11-10-25
+                    # Gate stim arming by N-trial blocks from GUI
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
                     self.block_size_logging = block_size
                     block_index = (self.reach_number - 1) // block_size  # New Code
@@ -1832,16 +1662,21 @@ class MainFrame(wx.Frame):
                                         # New Code 11-10-25
 
                     self._stim_armed = stim_allowed
+                    
+                    # Only log during active recording
+                    # if self.rec.GetValue():
+                    #     self.trial_delays.append(self.curr_trial_delay_ms)
 
                     # NEW CODE 12-30-2025
                     if self.data_logging_enabled:
                         self.trial_delays.append(self.curr_trial_delay_ms)
-                          
+                    
+                    # Log this trial's delay only once, at reveal time, grant hughes, 8-11-2025
+                    #self.trial_delays.append(self.curr_trial_delay_ms)
+                    
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
-                    perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
-
-                    #expected_delay = delayva
+                    #expected_delay = delayval
                     self.com.value = 4
                     if self.check_delay.GetValue():
                             ## --- measure actual waiting ---
@@ -1850,8 +1685,19 @@ class MainFrame(wx.Frame):
         #                     Log both intended and actual
                             print(f"[PELLET DELAY] intended delay: {self.curr_trial_delay_ms} ms, actual wait: {elapsed_check*1000:.1f} ms")
                    
-                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Successes: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Early Resets: {self.trial_reset_count} ({perecent_failed_reaches:.0f}%) || [REC] {m} min {s:02d} sec remaining")
-             
+                    print(f"[{total_trial_count}] ✔️    Delay {self.curr_trial_delay_ms} ms || {epoch_progress_label} || Tone-2 Success Count: {self.reach_number} ({perecent_successful_reaches:.0f}%) || Trial Number: {total_trial_count} || [REC] {m} min {s:02d} sec remaining")
+                   
+                    # Only log during active recording
+                    #if self.rec.GetValue():
+                        #if stim_allowed:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.stim_allowed_trials.append(total_trial_count)
+                        #else:
+                            #total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                            #self.washout_trials.append(total_trial_count)
+    
+                            
+                            # Only log during active recording (nested by epoch)
                     # if self.rec.GetValue():  # New Code
                     if self.data_logging_enabled:  # New Code 12-30-2025
                         total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
@@ -1897,16 +1743,42 @@ class MainFrame(wx.Frame):
                     
             elif self.pellet_status == 3: # Test whether to get new pellet
             
-        
+            
+                # # ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+                
+                # #--------- Grant Gughes, 08-15-2025  
+                # #--------- Working on getting a StimROI TTL to send an actual TTL
+                
+                # if self.auto_stim.GetValue():
+                #     # grab stim ROI mean the same way inspect_stim prints it
+                #     ndx = self.axes.index(self.stimAxes)
+                #     stim_cpt = self.stimroi
+                #     stim_val = self.frame[ndx][stim_cpt[2]:stim_cpt[2]+stim_cpt[3],
+                #                                 stim_cpt[0]:stim_cpt[0]+stim_cpt[1]].mean()
+                    
+                # # New Code, 8-18-2025
+                #     thr = self.system_cfg.get('stimulusThreshold', self.system_cfg.get('stimThreshold', 300))
+                    
+                #     #print(f"[StimDBG] threshold={thr}  roi_mean={stim_val:.1f}  armed={getattr(self,'_stim_armed', False)}")
+
+                #     if (stim_val >= thr) and getattr(self, '_stim_armed', False):
+                #         #print('\n\n  -- stimulusThreshold PASSED --\n\n')  # New Code
+                #         #print(f"[stimTTL] val={stim_val:.1f} thr={thr} armed={self._stim_armed}")  # New Code
+                #         # self.com.value = 16  # New Code → arduinoCtrl sends 'S' → main .ino pulses pin 12 for ~5 ms
+                #         # while self.com.value > 0:  # New Code
+                #         #     time.sleep(0.01)       # New Code
+                #         self._stim_armed = False   # New Code  fire once per reveal
+                                                            
+                # # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+                
+                
+                
                 if not objDetected:
                     if (time.time()-self.delivery_delay) > self.user_cfg['minTime2Eat']:
                         getNewPellet = True
-                        self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
                 elif (time.time()-self.delivery_delay) > self.user_cfg['maxTime2Eat']:
                     getNewPellet = True
-                    self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
+                    
                     
             elif self.pellet_status == 4: #style B object detection listener
                 if objDetected:
@@ -1914,56 +1786,37 @@ class MainFrame(wx.Frame):
                     self.pellet_status = 3
                 elif (time.time()-self.pellet_timing) > wait2detect:
                     getNewPellet = True
-                    self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
-
-            if resetHomeMouseOnly:  # NEW CODE 01-05-26
-                self.trial_line_printed = False
-
-                if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
-                    self.stim_status.value = 0
-                    self._stim_armed = False
-
-                # consecutive early-reset penalty: trigger on 5,10,15,... consecutive early resets
-                penalty_trigger = (self.early_reset_streak > 0) and (self.early_reset_streak % self.early_reset_penalty_every == 0)
-                penalty_s = self.early_reset_penalty_s if penalty_trigger else 0.0
-
-                # hold pelletHandler state machine while motion runs
-                self.pellet_status = -1
-                self.pellet_confirm_frames = 0
-
-                def _after_reset_delivery():
-                    self._pellet_ignore_until = time.time() + 0.75
-                    self.failCt = 0
-                    self.hand_timing = time.time()
-                    self.delivery_delay = time.time()
-
-                    # already at Mouse due to seq ending with com=3
-                    self.pellet_timing = time.time()
-                    self.pellet_status = 1
-
-                # NEW CODE (what you want)
-                seq = [
-                    1, ("wait", penalty_s + self.early_reset_home_pause_s),  # Home + (30s if triggered) + 3s always
-                    3,                                                       # then go to Mouse
-                ]
-
-                self._queue_com_sequence_timed(seq, timeout_s=120.0, poll_ms=5, on_done=_after_reset_delivery)
-                return
                     
-            elif getNewPellet:
-                self.trial_line_printed = False
-
+                
+            if getNewPellet:
+                self.trial_line_printed = False  # ✅ MOVE IT HERE
                 if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
                     self.stim_status.value = 0
-                    self._stim_armed = False
-
-                # dispense new pellet (non-blocking)
-                self._queue_com_sequence([2], timeout_s=3.0, poll_ms=5)
-
-                # restart pellet state machine
+                    # ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+                    
+                    #--------- Grant Gughes, 08-15-2025  
+                    #--------- Working on getting a StimROI TTL to send an actual TTL
+                    self._stim_armed = False  # New Code
+                  
+                self.com.value = 2
+                while self.com.value > 0:
+                    time.sleep(0.01)
                 self.pellet_status = 0
                 self.pellet_timing = time.time()
   
+                  
+              # ---- only reload/close the door if “Keep door open” is FALSE ----
+              #if not getattr(self, 'keep_open', False):
+                  # existing reload logic
+                  #self.com.value = 2
+                  #while self.com.value > 0:
+                      #time.sleep(0.01)
+                  #self.pellet_status = 0
+                  #self.pellet_timing = time.time()
+              #else:
+         
+                  #self.pellet_status = 0
+                  #self.pellet_timing = time.time()
     
     
             
