@@ -2296,11 +2296,10 @@ class MainFrame(wx.Frame):
             
             # Grant Hughes, 7-31-2025 \\ working on +500ms delay pellet reveal issue \\ Test #1
             # Change Notes: changed liveRate = 250 to liveRate = 50
-            #liveRate = 250
-            #liveRate = 50
             # Grant Hughes, 8-19-2025 \\ working on stimROI --> optical pulses latency
-            ## Dropped liverate = 50 down to liverate = 1
-            liveRate = 250
+            # Fixed 2026-01-10: Reduced from 250ms to 150ms to match Live mode responsiveness
+            # The autoCapture() function now uses real elapsed time (line 2207-2212), so this is safe
+            liveRate = 150
 
             
             self.Bind(wx.EVT_TIMER, self.autoCapture, self.recTimer)
