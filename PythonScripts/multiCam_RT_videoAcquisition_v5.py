@@ -2207,6 +2207,9 @@ class MainFrame(wx.Frame):
         elapsed = time.time() - self.record_start_time
         if elapsed >= self.totTime:
             # Time’s up — stop recording
+            # Fix 2026-01-10: Stop timer BEFORE calling recordCam to prevent re-entrancy
+            if self.recTimer.IsRunning():
+                self.recTimer.Stop()
             self.rec.SetValue(False)
             self.recordCam(event)
             return
@@ -2215,6 +2218,9 @@ class MainFrame(wx.Frame):
         self.sliderTabs += self.sliderRate
         if self.sliderTabs > self.slider.GetMax():
             # (This branch is now redundant, but safe to keep)
+            # Fix 2026-01-10: Stop timer BEFORE calling recordCam to prevent re-entrancy
+            if self.recTimer.IsRunning():
+                self.recTimer.Stop()
             self.rec.SetValue(False)
             self.recordCam(event)
         else:
