@@ -517,7 +517,7 @@ if (servoActive == true){                                  // New Code
         crackCylindoor();
       }
       BARRIER_RELEASED = true;   // New Code: barrier is now in "released" state
-      playTone(5000);
+      playTone(6000);
     }
 
         // New Code: tone-only command (tone-1)

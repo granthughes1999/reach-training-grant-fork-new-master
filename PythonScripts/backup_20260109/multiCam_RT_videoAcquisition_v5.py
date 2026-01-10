@@ -18,7 +18,7 @@ import ctypes
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-import matplotlib.pyplot as plt  # New Code
+
 # Grant 8-29-25 changed import for pyspin from normal file
 import multiCam_DLC_PySpin_v2_extStim as spin
 #import multiCam_DLC_PySpin_v2 as spin
@@ -157,11 +157,6 @@ class MainFrame(wx.Frame):
         self.early_reset_penalty_s = 30.0      # New Code: penalty duration (seconds) at home
         self.early_reset_home_pause_s = 3.0    # New Code: required pause at home before returning to mouse
 
-        self.trial_outcomes_all = []          # New Code: one entry per "trial" in your total_trial_count basis
-        self.tone2_success_trials_all = []    # New Code: total-trial-index for tone-2 successes
-        self.early_reset_trials_all = []      # New Code: total-trial-index for early resets
-        self.no_pellet_trials_all = []        # New Code: total-trial-index for no-pellet detections
-        self.total_trials = 0                 # New Code: cached total_trial_count at end of session
             
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
@@ -912,11 +907,6 @@ class MainFrame(wx.Frame):
         self.reach_number = 0
         self.trial_reset_count = 0 # Grant, adds counter to total times mouse fails trial by hand in handROI
         self.no_pellet_detect_count = 0
-        self.trial_outcomes_all.clear()        # New Code
-        self.tone2_success_trials_all.clear()  # New Code
-        self.early_reset_trials_all.clear()    # New Code
-        self.no_pellet_trials_all.clear()      # New Code
-        self.total_trials = 0                  # New Code
         print(f'\n\n')
         print('----------------------------------------------------')
         print('Session Counters RESET')
@@ -1478,107 +1468,6 @@ class MainFrame(wx.Frame):
         import logging
         logging.shutdown()
     # NEW CODE 12-30-2025 ---------------------------------------------------------
-    def _save_behavior_plots(self, mode_tag: str = "REC"):
-        """
-        Saves 3 plots into self.sess_dir:
-        1) Bar plot: delay times (ms) vs count (from self.trial_delays)
-        2) Cumulative tone-2 success % over total trials
-        3) Per-trial colored segments: red=early reset, green=success, annotated with trial #
-        """
-        try:
-            if not hasattr(self, "sess_dir") or self.sess_dir is None:
-                return
-
-            sess_dir = Path(self.sess_dir)
-            sess_dir.mkdir(parents=True, exist_ok=True)
-
-            # base filename stem consistent with your other outputs
-            stem = f"{self.date_string}_{self.system_cfg['unitRef']}_{self.sess_string}_{mode_tag}"
-
-            # ----------------------------
-            # Plot #1: Delay histogram bar
-            # ----------------------------
-            delays = np.array(getattr(self, "trial_delays", []), dtype=float)
-            if delays.size > 0:
-                unique_ms, counts = np.unique(delays.astype(int), return_counts=True)
-                order = np.argsort(unique_ms)
-                unique_ms = unique_ms[order]
-                counts = counts[order]
-
-                fig = plt.figure()
-                ax = fig.add_subplot(111)
-                ax.bar(unique_ms, counts)
-                ax.set_xlabel("Delay (ms)")
-                ax.set_ylabel("Count")
-                ax.set_title("Delay counts")
-                fig.savefig(sess_dir / f"{stem}_delay_counts_bar.png", dpi=200, bbox_inches="tight")
-                plt.close(fig)
-
-            # ---------------------------------------------------------
-            # Plot #2: Cumulative tone-2 success % over total trials
-            # ---------------------------------------------------------
-            # NEW CODE
-            outcomes = list(getattr(self, "trial_outcomes_all", []))  # New Code
-            n_total = len(outcomes)                                   # New Code
-            if n_total == 0:                                          # New Code
-                n_total = int(getattr(self, "total_trials", 0))        # New Cod
-
-            
-            if n_total > 0:
-                # pad/truncate outcomes to match n_total if needed
-                if len(outcomes) < n_total:
-                    outcomes = outcomes + ([""] * (n_total - len(outcomes)))
-                elif len(outcomes) > n_total:
-                    outcomes = outcomes[:n_total]
-
-                is_success = np.array([1 if o == "success" else 0 for o in outcomes], dtype=float)
-                cum_success = np.cumsum(is_success)
-                trial_idx = np.arange(1, n_total + 1, dtype=float)
-                success_pct = (cum_success / trial_idx) * 100.0
-
-                fig = plt.figure()
-                ax = fig.add_subplot(111)
-                ax.plot(trial_idx, success_pct)
-                ax.set_xlabel("Total trials")
-                ax.set_ylabel("Tone-2 success (%)")
-                ax.set_title("Cumulative tone-2 success rate")
-                ax.set_ylim(0, 100)
-                fig.savefig(sess_dir / f"{stem}_tone2_success_percent_over_trials.png", dpi=200, bbox_inches="tight")
-                plt.close(fig)
-
-            # ---------------------------------------------------------
-            # Plot #3: Trial outcome timeline (red reset, green success)
-            # ---------------------------------------------------------
-            if n_total > 0:
-                fig = plt.figure()
-                ax = fig.add_subplot(111)
-
-                y0 = 1.0  # constant baseline to draw short colored segments
-
-                for t in range(1, n_total + 1):
-                    o = outcomes[t - 1] if (t - 1) < len(outcomes) else ""
-                    if o == "success":
-                        ax.plot([t - 0.45, t + 0.45], [y0, y0], color="green", linewidth=3)
-                        ax.text(t, y0 + 0.05, str(t), ha="center", va="bottom", fontsize=7)
-                    elif o == "early_reset":
-                        ax.plot([t - 0.45, t + 0.45], [y0, y0], color="red", linewidth=3)
-                        ax.text(t, y0 + 0.05, str(t), ha="center", va="bottom", fontsize=7)
-                    else:
-                        # no_pellet or unknown: leave blank (keeps your requested red/green semantics)
-                        continue
-
-                ax.set_xlim(0.5, n_total + 0.5)
-                ax.set_ylim(0.8, 1.25)
-                ax.set_yticks([])
-                ax.set_xlabel("Total trials")
-                ax.set_title("Trial outcomes (green=success, red=early reset)")
-
-                fig.savefig(sess_dir / f"{stem}_trial_outcome_timeline.png", dpi=200, bbox_inches="tight")
-                plt.close(fig)
-
-        except Exception as e:
-            # keep acquisition robust: never crash end-of-session saving
-            print(f"[WARN] Plot saving failed: {e}")
 
     def liveFeed(self, event):
         if self.play.GetLabel() == 'Abort':
@@ -1654,7 +1543,6 @@ class MainFrame(wx.Frame):
 
             # === NEW:  12-31-2025 print final summary INTO LOG ===
             total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-
             if total_trial_count == 0:
                 total_trial_count = 1
 
@@ -1762,10 +1650,6 @@ class MainFrame(wx.Frame):
                         self.no_pellet_detect_count += 1
                         print('----------------------------------------------------------------------------------------------------------------------------')
                         total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                        # New Code
-                        self.total_trials = total_trial_count                  # New Code
-                        self.trial_outcomes_all.append("no_pellet")            # New Code
-                        self.no_pellet_trials_all.append(total_trial_count)    # New Code
                         if total_trial_count == 0:
                             perecent_no_pellet = 100
                         else:
@@ -1840,7 +1724,6 @@ class MainFrame(wx.Frame):
                     
                 if not getattr(self, 'trial_line_printed', False):
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                    # New Code
                     print('----------------------------------------------------------------------------------------------------------------------------')
                     self.trial_line_printed = True
                     
@@ -1871,10 +1754,7 @@ class MainFrame(wx.Frame):
                     self.trial_reset_count += 1
 
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                    # New Code
-                    self.total_trials = total_trial_count                                                         # New Code
-                    self.trial_outcomes_all.append("early_reset")                                                  # New Code
-                    self.early_reset_trials_all.append(total_trial_count)
+                    self.total_trials = total_trial_count
 
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
@@ -1960,10 +1840,6 @@ class MainFrame(wx.Frame):
                         self.trial_delays.append(self.curr_trial_delay_ms)
                           
                     total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
-                    # New Code
-                    self.total_trials = total_trial_count                                                         # New Code
-                    self.trial_outcomes_all.append("success")                                                      # New Code
-                    self.tone2_success_trials_all.append(total_trial_count) 
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
 
@@ -2107,8 +1983,6 @@ class MainFrame(wx.Frame):
             return
         for ndx, im in enumerate(self.im):
             if self.frmGrab[ndx].value == 1:
-                if self.recTimer.IsRunning():
-                    self.recTimer.Stop()
                 self.frameBuff[ndx][0:] = np.frombuffer(self.array4feed[ndx].get_obj(), self.dtype, self.size)
                 frame = self.frameBuff[ndx][0:self.dispSize[ndx]].reshape([self.aqH[ndx], self.aqW[ndx]])
                 self.frame[ndx][self.y1[ndx]:self.y2[ndx],self.x1[ndx]:self.x2[ndx]] = frame
@@ -2209,8 +2083,16 @@ class MainFrame(wx.Frame):
             self.figure.canvas.draw()                                                 # New Code
             self._last_draw = _now  
             
-        if self.recTimer.IsRunning():
-            self.recTimer.Stop()
+        #self.figure.canvas.draw()
+        # --- Grant Hughes 8-19-2025, Working on stimROI --> Optical Pulses delay
+
+
+  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+  
+# ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+
+#--------- Grant Gughes, 08-21-2025  
+#--------- Working on getting a StimROI TTL to send an actual TTL
 # Fast StimROI trigger on the stim camera's own frames   
     def vidPlayer(self, event):
         
@@ -2424,7 +2306,7 @@ class MainFrame(wx.Frame):
             #liveRate = 50
             # Grant Hughes, 8-19-2025 \\ working on stimROI --> optical pulses latency
             ## Dropped liverate = 50 down to liverate = 1
-            liveRate = 150
+            liveRate = 250
 
             
             self.Bind(wx.EVT_TIMER, self.autoCapture, self.recTimer)
@@ -2665,15 +2547,6 @@ class MainFrame(wx.Frame):
             # Cleanly close logging
             import logging
             logging.shutdown()
-
-
-            # New Code (insert between the print and logging.shutdown)
-            print(f"[INFO] Saved non-video data to {self.sess_dir}")
-            self._save_behavior_plots(mode_tag=mode_tag)  # New Code: saves 3 PNG plots into sess_dir
-
-            import logging
-            logging.shutdown()
-
             # 2) Remove any FileHandlers so future prints aren't captured
             root_logger = logging.getLogger()
             for handler in root_logger.handlers[:]:

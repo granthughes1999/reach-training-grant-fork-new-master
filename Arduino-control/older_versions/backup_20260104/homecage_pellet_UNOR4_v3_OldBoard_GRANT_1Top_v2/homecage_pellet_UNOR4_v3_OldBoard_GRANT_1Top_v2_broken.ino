@@ -126,22 +126,10 @@ unsigned long servoSetTime = millis();
 bool servoActive = false;
 const unsigned long SPOON_HOME_HOLD_MS = 250;  // New Code: 12-17-2025 hold torque at home before detach
 
-// New Code — required
 
-// Bellow: New Code 01-04-2026
-const unsigned long SERVO_UPDATE_US      = 10000;  // keep
-const unsigned int  STEP_MIN_LOW_US      = 4000;   // New Code: much slower (reduces stall/resonance)
-const unsigned int  STEP_MAX_LOW_US      = 4000;   // New Code: slow start/stop
-const unsigned int  STEP_RAMP_STEPS      = 140;    // New Code: longer accel/decel
-const unsigned long SPOON_DOWN_HOLD_MS   = 200;    // New Code: longer bottom dwell
-// Above: New Code 01-04-2026
-
-// New Code: keep return speed consistent through pellets// New Code
-
-// New Code
 // New Code: uniform step period control
 const unsigned int STEP_PULSE_HIGH_US   = 8;      // step pulse width
-const unsigned int SCOOP_RETURN_LOW_US  = 8000;  // your uniform return speed (bigger = slower)
+const unsigned int SERVO_UPDATE_US  = 8000;  // your uniform return speed (bigger = slower)
 const unsigned int SERVO_UPDATE_EVERY_N = 4;      // update servo every N steps (reduces jitter)
 bool BARRIER_RELEASED = false;
 const int spoonUpSafeVal = spoonHomeVal + 700;   // tune: +50 to +300 us, must not collide
@@ -226,91 +214,13 @@ void setup(){
 void loop(){
 
 // NEW CODE: only detach cylindoor servo automatically; spoon servo detach is handled at home only
-if (servoActive == true){                                  // New Code
-  if ((millis()-servoSetTime) > 2000){                     // New Code
-    myservo_cy.detach();                                   // New Code
-    servoActive = false;                                   // New Code
-  }                                                        // New Code
-}                                                          // New Code
-  // if (digitalRead(buttonPin) == LOW & allowButtonDelivery == 1){
-  //   buttonPressedTime = millis();
-  //   while (digitalRead(buttonPin) == LOW){
-  //     delay(10);
-  //     if ((millis() - buttonPressedTime) > 2000){
-  //       if (allowButtonStyleChange == 1){
-  //         if (deliveryStyle == 0){
-  //           deliveryStyle = 1;
-  //         }
-  //         else {
-  //           deliveryStyle = 0;
-  //         }
-  //         playTone(2000);
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   while (digitalRead(buttonPin) == LOW){
-  //     delay(10);
-  //   }
-  //   if ((millis() - buttonPressedTime) < 2000){
-  //     if (cylindoorState == 1 & deliveryStyle == 0){
-  //       delay(5);
-  //       crackCylindoor();
-  //       playTone(5000);
-  //     }
-  //     else if (deliveryState == 1){
-  //       stepCt = abs(10)*stepsPerMM;
-  //       energizePin = energizeY;
-  //       delay(5);
-  //       setStepper();
-  //       playTone(5000);
-  //       deliveryState = 0;
-  //     }
-  //     else {
-  //       delay(5);
-  //       sendHome();
-  //       if (homeFail == false){
-  //         delay(5);
-  //         loadPellet();
-  //         delay(5);
-  //         sendHome();
-  //         delay(5);
-  //         if (deliveryStyle == 1){
-  //           deliveryState = 1;
-  //         }AT_HOME
-  //         deliverPellet();
-  //         playTone(6000);
-  //         delay(5);
-  //       }
-  //     }
-  //   }
-  // }
+if (servoActive == true){                                
+  if ((millis()-servoSetTime) > 2000){                     
+    myservo_cy.detach();                                   
+    servoActive = false;                                   
+  }                                                       
+}                                                         
 
- // I2C Comm
-  // if (Wire.available() > 0) {
-  //   rxChar = Wire.read();
-  //   Serial.print("Received via I2C: ");
-  //   Serial.println(rxChar);
-  //   delay(50);
-  //   while (Wire.available() > 0) {
-  //     if(mPos < 19) // One less than the size of the array
-  //     {
-           
-  //       inChar = Wire.read();
-  //       if (inChar == 'x'){
-  //         break;
-  //       }
-  //       rxStr[mPos] = inChar; // Store it
-  //       mPos++; // Increment where to write next
-  //     }
-  //     delay(5);
-  //   }
-  //   rxStr[mPos] = '\0'; // Null terminate the string
-  //   mPos=0;
-  //   msgInt = atoi(rxStr);
-  // }
-
-//  Comm from controller
   ser2read = Serial1.available();
   if (ser2read > 0){          // Check receive buffer.
     // Serial.println(ser2read);
@@ -806,46 +716,6 @@ void stepPrep(){
 }
 
 
-// old code
-// (your current setServoStep() is missing closing braces in the FORCE_UNIFORM_SCOOP_RETURN branch)
-// old code
-// (your current setServoStep() has unbalanced braces, leaving code at global scope)
-
-// New Code: 01-04-2026 — FULL replacement (compile-safe, uniform upward return speed)
-// old code
-// void setServoStep(){
-//   stepPrep();
-//   delay(5);
-//   servoInterv = (float)stepCt;
-//   servoInterv = (servoGoalVal-(float)prevServoPos)/servoInterv;
-//   if (!myservo.attached()){
-//     myservo.attach(servoPin);
-//     while (!myservo.attached()){
-//       delay(1);
-//     }
-//   }
-//   for(int x = 0; x < stepCt; x++) {
-//     servoSetVal = prevServoPos+servoInterv*(float)x;
-//     myservo.writeMicroseconds(servoSetVal);
-//     digitalWrite(stepPin,HIGH); 
-//     delayMicroseconds(1000); 
-//     digitalWrite(stepPin,LOW); 
-//     delayMicroseconds(1000);
-//   }
-//   prevServoPos = servoGoalVal;
-//   if ((int)servoGoalVal == spoonHomeVal) {
-//     myservo.writeMicroseconds(spoonHomeVal);
-//     delay(SPOON_HOME_HOLD_MS);
-//     myservo.detach();
-//   }
-//   digitalWrite(dirPinX,LOW); delay(5);
-//   digitalWrite(dirPinY,LOW); delay(5);
-//   digitalWrite(dirPinZ,LOW); delay(5);
-//   digitalWrite(energizePin, HIGH); delay(5);
-//   servoSetTime = millis();
-//   servoActive = true;
-// }
-
 // New Code: uniform step timing + reduced servo jitter
 void setServoStep() {
   stepPrep();
@@ -1043,35 +913,32 @@ void setServoPos(){
 
     // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
   // NEW CODE: hold at home briefly to eliminate endpoint variability, then detach
-  if ((int)servoGoalVal == spoonHomeVal) {        // New Code
-    myservo.writeMicroseconds(spoonHomeVal);      // New Code
-    delay(SPOON_HOME_HOLD_MS);                    // New Code
-    myservo.detach();                             // New Code
-  }                                               // New Code                                    // NEW CODE
+  if ((int)servoGoalVal == spoonHomeVal) {      
+    myservo.writeMicroseconds(spoonHomeVal);      
+    delay(SPOON_HOME_HOLD_MS);                   
+    myservo.detach();                            
+  }                                                                                   
 
-  servoSetTime = millis();                  // old code
-  servoActive = true;                       // old code
-    // 12-16-2025 NEW CODE: detach spoon servo immediately when at level (home) position
+  servoSetTime = millis();                  
+  servoActive = true;                      
 
   servoSetTime = millis();
   servoActive = true;
 }
 
 void setCylindoor(){
-  // old code: myservo_cy.writeMicroseconds(barrierHomeVal);
-  // old code: cylindoorState = 1;
 
-  if (!myservo_cy.attached()){          // New Code
-    myservo_cy.attach(servoPin_cy);     // New Code
-    while (!myservo_cy.attached()){     // New Code
-      delay(1);                         // New Code
-    }                                   // New Code
-  }                                     // New Code
+  if (!myservo_cy.attached()){          
+    myservo_cy.attach(servoPin_cy);     
+    while (!myservo_cy.attached()){    
+      delay(1);                         
+    }                                   
+  }                                    
 
-  myservo_cy.writeMicroseconds(barrierHomeVal);  // New Code
-  cylindoorState = 1;                             // New Code
-  servoSetTime = millis();                        // New Code (keeps detach-timer consistent)
-  servoActive = true;                             // New Code
+  myservo_cy.writeMicroseconds(barrierHomeVal);  
+  cylindoorState = 1;                             
+  servoSetTime = millis();                        
+  servoActive = true;                             
 }
 
 void crackCylindoor(){

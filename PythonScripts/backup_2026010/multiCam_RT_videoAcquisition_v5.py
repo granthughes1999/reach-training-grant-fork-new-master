@@ -2107,8 +2107,6 @@ class MainFrame(wx.Frame):
             return
         for ndx, im in enumerate(self.im):
             if self.frmGrab[ndx].value == 1:
-                if self.recTimer.IsRunning():
-                    self.recTimer.Stop()
                 self.frameBuff[ndx][0:] = np.frombuffer(self.array4feed[ndx].get_obj(), self.dtype, self.size)
                 frame = self.frameBuff[ndx][0:self.dispSize[ndx]].reshape([self.aqH[ndx], self.aqW[ndx]])
                 self.frame[ndx][self.y1[ndx]:self.y2[ndx],self.x1[ndx]:self.x2[ndx]] = frame
@@ -2209,8 +2207,16 @@ class MainFrame(wx.Frame):
             self.figure.canvas.draw()                                                 # New Code
             self._last_draw = _now  
             
-        if self.recTimer.IsRunning():
-            self.recTimer.Stop()
+        #self.figure.canvas.draw()
+        # --- Grant Hughes 8-19-2025, Working on stimROI --> Optical Pulses delay
+
+
+  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+  
+# ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+
+#--------- Grant Gughes, 08-21-2025  
+#--------- Working on getting a StimROI TTL to send an actual TTL
 # Fast StimROI trigger on the stim camera's own frames   
     def vidPlayer(self, event):
         
