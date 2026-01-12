@@ -162,10 +162,6 @@ class MainFrame(wx.Frame):
         self.early_reset_trials_all = []      # New Code: total-trial-index for early resets
         self.no_pellet_trials_all = []        # New Code: total-trial-index for no-pellet detections
         self.total_trials = 0                 # New Code: cached total_trial_count at end of session
-
-            # Initialize pellet phase tracking
-        self._pellet_phase = "idle"  # Default state for spoon phase
-        self._mouse_arrival_ts = 0  # Timestamp to track Mouse arrival
             
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
@@ -1657,8 +1653,8 @@ class MainFrame(wx.Frame):
             self.data_logging_enabled = False
 
             # === NEW:  12-31-2025 print final summary INTO LOG ===
-            total_trial_count = self.trial_reset_count + self.reach_number
-            total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+
             if total_trial_count == 0:
                 total_trial_count = 1
 
@@ -1669,7 +1665,7 @@ class MainFrame(wx.Frame):
             print(f" #️⃣     Total Trials:          {total_trial_count}")
             print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
             print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count_w_no_pellet)*100:.1f}%)")
+            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
             print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
             print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
             print('───────────────────────────────────────────────\n')
@@ -1716,13 +1712,6 @@ class MainFrame(wx.Frame):
         objDetected = False
         if pim > self.system_cfg['pelletThreshold']:
             objDetected = True
-            # Ignore detection unless we are confirmed at the mouse and have waited a short dwell
-            if not hasattr(self, "_pellet_phase"):  # Ensure this attribute exists
-                self._pellet_phase = "idle"  # Default phase
-            if self._pellet_phase != "at_mouse":
-                return  # Only process detection when at the Mouse
-            if (time.time() - getattr(self, "_mouse_arrival_ts", 0)) < 0.15:  # Grace period 150ms
-                return  # Skip detection if within the dwell time window
             
         if self.is_busy.value == -1:
             self.auto_pellet.SetValue(0)
@@ -1742,20 +1731,13 @@ class MainFrame(wx.Frame):
                 wait2detect = 2
                 # objDetected = True
             # checked 
-
-
             if self.pellet_status == 0:
-                # Set the phase to 'to_mouse' before starting the motion
-                self._pellet_phase = "to_mouse"  # Transition: moving to the Mouse position
-                self.com.value = 3  # Send spoon to Mouse position
-                while self.com.value > 0:  # Wait until the operation completes
+               # print('send to mouse')
+                self.com.value = 3
+                while self.com.value > 0:
                     time.sleep(0.01)
-                # Spoon is now at the Mouse, start grace timing
-                self._pellet_phase = "at_mouse"  # Transition: spoon is now ready at Mouse
-                self._mouse_arrival_ts = time.time()  # Mark arrival time to enforce grace period
                 self.pellet_timing = time.time()
                 self.pellet_status = 1
-
             # checked 
             elif self.pellet_status == 1:
                 if self.del_style.value == 0:
@@ -1779,15 +1761,15 @@ class MainFrame(wx.Frame):
                         self.failCt+=1
                         self.no_pellet_detect_count += 1
                         print('----------------------------------------------------------------------------------------------------------------------------')
-                        total_trial_count = self.trial_reset_count + self.reach_number
-                        total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+                        total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                        # New Code
                         self.total_trials = total_trial_count                  # New Code
                         self.trial_outcomes_all.append("no_pellet")            # New Code
                         self.no_pellet_trials_all.append(total_trial_count)    # New Code
                         if total_trial_count == 0:
                             perecent_no_pellet = 100
                         else:
-                            perecent_no_pellet = (self.no_pellet_detect_count / total_trial_count_w_no_pellet) * 100
+                            perecent_no_pellet = (self.no_pellet_detect_count / total_trial_count) * 100
                         print(f"[{total_trial_count}] 🚫 No pellet detected in ROI || No Pellet Count: {self.no_pellet_detect_count} ({perecent_no_pellet:.1f}%)")
                         # checked
                         if self.failCt > 3:
@@ -1857,7 +1839,7 @@ class MainFrame(wx.Frame):
                 
                     
                 if not getattr(self, 'trial_line_printed', False):
-                    total_trial_count = self.trial_reset_count + self.reach_number
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     print('----------------------------------------------------------------------------------------------------------------------------')
                     self.trial_line_printed = True
@@ -1888,7 +1870,7 @@ class MainFrame(wx.Frame):
                     self.early_reset_streak += 1   # New Code: consecutive early resets
                     self.trial_reset_count += 1
 
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("early_reset")                                                  # New Code
@@ -1977,7 +1959,7 @@ class MainFrame(wx.Frame):
                     if self.data_logging_enabled:
                         self.trial_delays.append(self.curr_trial_delay_ms)
                           
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("success")                                                      # New Code
@@ -2000,7 +1982,7 @@ class MainFrame(wx.Frame):
              
                     # if self.rec.GetValue():  # New Code
                     if self.data_logging_enabled:  # New Code 12-30-2025
-                        total_trial_count = self.trial_reset_count + self.reach_number
+                        total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
                         if block_index == 0:
                             self.baseline_trials.append(total_trial_count)
                             self.baseline_trials_tone2_aligned.append(self.reach_number)
@@ -2606,8 +2588,7 @@ class MainFrame(wx.Frame):
                 self.recTimer.Stop()
                 
             # 🟩 Summary log
-            total_trial_count = self.trial_reset_count + self.reach_number
-            total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+            total_trial_count = self.trial_reset_count + self.reach_number  + self.no_pellet_detect_count
             if total_trial_count == 0:
                 total_trial_count = 1  # avoid divide-by-zero
             print('\n\n')
@@ -2617,7 +2598,7 @@ class MainFrame(wx.Frame):
             print(f" #️⃣     Total Trials:          {total_trial_count}")
             print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
             print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count_w_no_pellet)*100:.1f}%)")
+            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
             #print(f"🔟    Epoch Sizes:   {self.block_size_logging}")
             print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
             print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
