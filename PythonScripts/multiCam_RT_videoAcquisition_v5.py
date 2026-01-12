@@ -2330,15 +2330,19 @@ class MainFrame(wx.Frame):
         # 1) Stop based on real elapsed time
         elapsed = time.time() - self.record_start_time
         if elapsed >= self.totTime:
-            # Time’s up — stop recording
+            # Time's up — stop recording
+            if self.recTimer.IsRunning():
+                self.recTimer.Stop()
             self.rec.SetValue(False)
             self.recordCam(event)
             return
+
     
         # 2) Otherwise update slider and continue capturing
         self.sliderTabs += self.sliderRate
         if self.sliderTabs > self.slider.GetMax():
-            # (This branch is now redundant, but safe to keep)
+            if self.recTimer.IsRunning():
+                self.recTimer.Stop()
             self.rec.SetValue(False)
             self.recordCam(event)
         else:
@@ -2660,16 +2664,10 @@ class MainFrame(wx.Frame):
             print(f"[INFO] Saved stim_allowed_trials_tone2_aligned to {stim_allowed_tone2_aligned_list_path}")
             print(f"[INFO] Saved washout_trials_tone2_aligned to {washout_list_tone2_aligned_path}")
 
-                        
-           
-            # Cleanly close logging
-            import logging
-            logging.shutdown()
-
 
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
-            self._save_behavior_plots(mode_tag=mode_tag)  # New Code: saves 3 PNG plots into sess_dir
+            self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
 
             import logging
             logging.shutdown()
