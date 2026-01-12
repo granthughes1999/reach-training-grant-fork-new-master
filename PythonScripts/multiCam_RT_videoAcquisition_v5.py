@@ -401,7 +401,7 @@ class MainFrame(wx.Frame):
 
         vpos+=1
         
-        self.Xmag = wx.SpinCtrl(self.widget_panel, value=str(0), size=(bw, -1))
+        self.Xmag = wx.SpinCtrl(self.widget_panel, value=str(-3), size=(bw, -1))
         min_text = wx.StaticText(self.widget_panel, label='X (mm):')
         sersizer.Add(min_text, pos=(vpos,0), span=(1,3), flag=wx.TOP, border=wSpace)
         sersizer.Add(self.Xmag, pos=(vpos,3), span=(1,3), flag=wx.ALL, border=wSpace)
@@ -409,7 +409,7 @@ class MainFrame(wx.Frame):
         self.Xmag.SetMin(-5)
         self.Xmag.Bind(wx.EVT_SPINCTRL, self.comFun)
         
-        self.Ymag = wx.SpinCtrl(self.widget_panel, value=str(0), size=(bw, -1))
+        self.Ymag = wx.SpinCtrl(self.widget_panel, value=str(4), size=(bw, -1))
         min_text = wx.StaticText(self.widget_panel, label='Y (mm):')
         sersizer.Add(min_text, pos=(vpos,6), span=(1,3), flag=wx.TOP, border=wSpace)
         sersizer.Add(self.Ymag, pos=(vpos,9), span=(1,3), flag=wx.ALL, border=wSpace)
@@ -419,7 +419,7 @@ class MainFrame(wx.Frame):
         
         vpos+=1
         
-        self.Zmag = wx.SpinCtrl(self.widget_panel, value=str(0), size=(bw, -1))
+        self.Zmag = wx.SpinCtrl(self.widget_panel, value=str(-2), size=(bw, -1))
         min_text = wx.StaticText(self.widget_panel, label='Z (mm):')
         sersizer.Add(min_text, pos=(vpos,0), span=(1,3), flag=wx.TOP, border=wSpace)
         sersizer.Add(self.Zmag, pos=(vpos,3), span=(1,3), flag=wx.ALL, border=wSpace)
