@@ -634,6 +634,12 @@ class MainFrame(wx.Frame):
         self.recTimer = wx.Timer(self, wx.ID_ANY)
         
         # --- Grant Hughes 8-19-2025 , working on stimROI --> Optical Pulses Delay
+        # Initialize video drawing throttle variables
+        self._last_draw = 0.0  # Track last canvas draw time
+        self._draw_hz = 30     # Target draw rate (30 FPS)
+        # --- Grant Hughes 8-19-2025 , working on stimROI --> Optical Pulses Delay
+        
+        # --- Grant Hughes 8-19-2025 , working on stimROI --> Optical Pulses Delay
         #self.figure,self.axes,self.canvas = self.image_panel.getfigure()
         #self.figure.canvas.draw()
         # New Code
@@ -1745,19 +1751,33 @@ class MainFrame(wx.Frame):
 
             if self.pellet_status == 0:
                 # Set the phase to 'to_mouse' before starting the motion
+                self._pellet_phase = "to_mouse"  # Track that we're moving to mouse position
                 self.com.value = 3  # Send spoon to Mouse position
                 while self.com.value > 0:  # Wait until the operation completes
                     time.sleep(0.01)
 
+                # Record when the move-to-mouse command completed
+                self._mouse_arrival_ts = time.time()
                 self.pellet_timing = time.time()
                 self.pellet_status = 1
 
             # checked 
             elif self.pellet_status == 1:
+                # NEW FIX: Ensure minimum wait time after movement command before checking pellet
+                # This prevents premature "No Pellet" detection while spoon is still moving to Mouse
+                min_arrival_wait = 1.0  # Minimum 1 second for physical movement to complete
+                time_since_move = time.time() - self._mouse_arrival_ts
+                
+                if time_since_move < min_arrival_wait:
+                    # Still waiting for spoon to physically arrive at Mouse position
+                    # Don't check pellet yet - just return and wait for next cycle
+                    return
+                
                 if self.del_style.value == 0:
 
                                 
                     if objDetected:
+                        self._pellet_phase = "at_mouse"  # Confirm spoon is at mouse with pellet
                         self.hand_timing = time.time()
                         self.pellet_timing = time.time()
                         self.pellet_status = 2
@@ -2062,6 +2082,7 @@ class MainFrame(wx.Frame):
                 perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
                 perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
                 self.trial_line_printed = False
+                self._pellet_phase = "early_reset"  # Track that we're in early reset mode
 
                 if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
                     self.stim_status.value = 0
@@ -2077,6 +2098,8 @@ class MainFrame(wx.Frame):
 
                 def _after_reset_delivery():
                     self._pellet_ignore_until = time.time() + 0.75
+                    self._pellet_phase = "at_mouse"  # After reset, we're back at mouse
+                    self._mouse_arrival_ts = time.time()  # Record arrival time
                     self.failCt = 0
                     self.hand_timing = time.time()
                     self.delivery_delay = time.time()
@@ -2096,6 +2119,7 @@ class MainFrame(wx.Frame):
                     
             elif getNewPellet:
                 self.trial_line_printed = False
+                self._pellet_phase = "getting_pellet"  # Track that we're getting a new pellet
 
                 if self.auto_stim.GetValue() and self.proto_str == 'First Reach':
                     self.stim_status.value = 0
@@ -2247,6 +2271,18 @@ class MainFrame(wx.Frame):
             self.setDelStyle()
     
         if self.camaq.value == 2:
+            return
+        
+        # FIX: Check if any new frames are available before processing
+        # This reduces CPU load when cameras are lagging or no new data is ready
+        any_new_frames = False
+        for ndx in range(len(self.im)):
+            if self.frmGrab[ndx].value == 1:
+                any_new_frames = True
+                break
+        
+        # If no new frames, skip this cycle to reduce lag
+        if not any_new_frames:
             return
     
         # 1) Process the stim camera FIRST for lowest latency
