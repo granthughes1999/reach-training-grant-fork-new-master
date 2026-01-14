@@ -162,8 +162,6 @@ class MainFrame(wx.Frame):
         self.early_reset_trials_all = []      # New Code: total-trial-index for early resets
         self.no_pellet_trials_all = []        # New Code: total-trial-index for no-pellet detections
         self.total_trials = 0                 # New Code: cached total_trial_count at end of session
-
-            # Initialize pellet phase tracking
             
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
@@ -227,15 +225,6 @@ class MainFrame(wx.Frame):
                 self.camStrList.append(key)
         self.slist = list()
         self.mlist = list()
-
-
-        # NEW CODE 01-14-2026 — identify stim camera serial 
-        self.stim_cam_key = self.system_cfg.get('stimAxes', None)            # New Code
-        self.stim_cam_serial = None                                          # New Code
-        if self.stim_cam_key in self.camStrList:                             # New Code
-            self.stim_cam_serial = str(self.system_cfg[self.stim_cam_key]['serial'])  # New Code
-        # NEW CODE 01-14-2026  — identify stim camera serial
-
         for s in self.camStrList:
             if not self.system_cfg[s]['ismaster']:
                 self.slist.append(str(self.system_cfg[s]['serial']))
@@ -1664,16 +1653,10 @@ class MainFrame(wx.Frame):
             self.data_logging_enabled = False
 
             # === NEW:  12-31-2025 print final summary INTO LOG ===
-            total_trial_count = self.trial_reset_count + self.reach_number
-            total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+            total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
 
             if total_trial_count == 0:
                 total_trial_count = 1
-                total_trial_count_w_no_pellet = 1
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-
 
             print('\n\n')
             print('───────────────────────────────────────────────')
@@ -1682,7 +1665,7 @@ class MainFrame(wx.Frame):
             print(f" #️⃣     Total Trials:          {total_trial_count}")
             print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
             print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count_w_no_pellet)*100:.1f}%)")
+            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
             print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
             print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
             print('───────────────────────────────────────────────\n')
@@ -1729,7 +1712,7 @@ class MainFrame(wx.Frame):
         objDetected = False
         if pim > self.system_cfg['pelletThreshold']:
             objDetected = True
-
+            
         if self.is_busy.value == -1:
             self.auto_pellet.SetValue(0)
             self.autoPellet(event=None)
@@ -1748,17 +1731,13 @@ class MainFrame(wx.Frame):
                 wait2detect = 2
                 # objDetected = True
             # checked 
-
-
             if self.pellet_status == 0:
-                # Set the phase to 'to_mouse' before starting the motion
-                self.com.value = 3  # Send spoon to Mouse position
-                while self.com.value > 0:  # Wait until the operation completes
+               # print('send to mouse')
+                self.com.value = 3
+                while self.com.value > 0:
                     time.sleep(0.01)
-
                 self.pellet_timing = time.time()
                 self.pellet_status = 1
-
             # checked 
             elif self.pellet_status == 1:
                 if self.del_style.value == 0:
@@ -1782,15 +1761,15 @@ class MainFrame(wx.Frame):
                         self.failCt+=1
                         self.no_pellet_detect_count += 1
                         print('----------------------------------------------------------------------------------------------------------------------------')
-                        total_trial_count = self.trial_reset_count + self.reach_number
-                        total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+                        total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
+                        # New Code
                         self.total_trials = total_trial_count                  # New Code
                         self.trial_outcomes_all.append("no_pellet")            # New Code
                         self.no_pellet_trials_all.append(total_trial_count)    # New Code
                         if total_trial_count == 0:
                             perecent_no_pellet = 100
                         else:
-                            perecent_no_pellet = (self.no_pellet_detect_count / total_trial_count_w_no_pellet) * 100
+                            perecent_no_pellet = (self.no_pellet_detect_count / total_trial_count) * 100
                         print(f"[{total_trial_count}] 🚫 No pellet detected in ROI || No Pellet Count: {self.no_pellet_detect_count} ({perecent_no_pellet:.1f}%)")
                         # checked
                         if self.failCt > 3:
@@ -1860,7 +1839,7 @@ class MainFrame(wx.Frame):
                 
                     
                 if not getattr(self, 'trial_line_printed', False):
-                    total_trial_count = self.trial_reset_count + self.reach_number
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     print('----------------------------------------------------------------------------------------------------------------------------')
                     self.trial_line_printed = True
@@ -1891,7 +1870,7 @@ class MainFrame(wx.Frame):
                     self.early_reset_streak += 1   # New Code: consecutive early resets
                     self.trial_reset_count += 1
 
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("early_reset")                                                  # New Code
@@ -1980,7 +1959,7 @@ class MainFrame(wx.Frame):
                     if self.data_logging_enabled:
                         self.trial_delays.append(self.curr_trial_delay_ms)
                           
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("success")                                                      # New Code
@@ -2003,7 +1982,7 @@ class MainFrame(wx.Frame):
              
                     # if self.rec.GetValue():  # New Code
                     if self.data_logging_enabled:  # New Code 12-30-2025
-                        total_trial_count = self.trial_reset_count + self.reach_number
+                        total_trial_count = self.trial_reset_count + self.reach_number + self.no_pellet_detect_count  # New Code
                         if block_index == 0:
                             self.baseline_trials.append(total_trial_count)
                             self.baseline_trials_tone2_aligned.append(self.reach_number)
@@ -2128,8 +2107,6 @@ class MainFrame(wx.Frame):
             return
         for ndx, im in enumerate(self.im):
             if self.frmGrab[ndx].value == 1:
-                if self.recTimer.IsRunning():
-                    self.recTimer.Stop()
                 self.frameBuff[ndx][0:] = np.frombuffer(self.array4feed[ndx].get_obj(), self.dtype, self.size)
                 frame = self.frameBuff[ndx][0:self.dispSize[ndx]].reshape([self.aqH[ndx], self.aqW[ndx]])
                 self.frame[ndx][self.y1[ndx]:self.y2[ndx],self.x1[ndx]:self.x2[ndx]] = frame
@@ -2230,8 +2207,16 @@ class MainFrame(wx.Frame):
             self.figure.canvas.draw()                                                 # New Code
             self._last_draw = _now  
             
-        if self.recTimer.IsRunning():
-            self.recTimer.Stop()
+        #self.figure.canvas.draw()
+        # --- Grant Hughes 8-19-2025, Working on stimROI --> Optical Pulses delay
+
+
+  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+  
+# ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+
+#--------- Grant Gughes, 08-21-2025  
+#--------- Working on getting a StimROI TTL to send an actual TTL
 # Fast StimROI trigger on the stim camera's own frames   
     def vidPlayer(self, event):
         
@@ -2351,19 +2336,15 @@ class MainFrame(wx.Frame):
         # 1) Stop based on real elapsed time
         elapsed = time.time() - self.record_start_time
         if elapsed >= self.totTime:
-            # Time's up — stop recording
-            if self.recTimer.IsRunning():
-                self.recTimer.Stop()
+            # Time’s up — stop recording
             self.rec.SetValue(False)
             self.recordCam(event)
             return
-
     
         # 2) Otherwise update slider and continue capturing
         self.sliderTabs += self.sliderRate
         if self.sliderTabs > self.slider.GetMax():
-            if self.recTimer.IsRunning():
-                self.recTimer.Stop()
+            # (This branch is now redundant, but safe to keep)
             self.rec.SetValue(False)
             self.recordCam(event)
         else:
@@ -2609,14 +2590,9 @@ class MainFrame(wx.Frame):
                 self.recTimer.Stop()
                 
             # 🟩 Summary log
-            total_trial_count = self.trial_reset_count + self.reach_number
-            total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
+            total_trial_count = self.trial_reset_count + self.reach_number  + self.no_pellet_detect_count
             if total_trial_count == 0:
                 total_trial_count = 1  # avoid divide-by-zero
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-                
             print('\n\n')
             print('───────────────────────────────────────────────')
             print(f'📄 {self.sess_info} Recording Summary')
@@ -2624,7 +2600,7 @@ class MainFrame(wx.Frame):
             print(f" #️⃣     Total Trials:          {total_trial_count}")
             print(f"✔️     Tone-2 Successes:      {self.reach_number} ({(self.reach_number / total_trial_count)*100:.1f}%)")
             print(f"⚠️    Early Reach Resets:    {self.trial_reset_count} ({(self.trial_reset_count / total_trial_count)*100:.1f}%)")
-            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count_w_no_pellet)*100:.1f}%)")
+            print(f"🚫    No Pellet Detections:  {self.no_pellet_detect_count} ({(self.no_pellet_detect_count / total_trial_count)*100:.1f}%)")
             #print(f"🔟    Epoch Sizes:   {self.block_size_logging}")
             print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
             print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
@@ -2690,10 +2666,16 @@ class MainFrame(wx.Frame):
             print(f"[INFO] Saved stim_allowed_trials_tone2_aligned to {stim_allowed_tone2_aligned_list_path}")
             print(f"[INFO] Saved washout_trials_tone2_aligned to {washout_list_tone2_aligned_path}")
 
+                        
+           
+            # Cleanly close logging
+            import logging
+            logging.shutdown()
+
 
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
-            self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
+            self._save_behavior_plots(mode_tag=mode_tag)  # New Code: saves 3 PNG plots into sess_dir
 
             import logging
             logging.shutdown()
@@ -2771,48 +2753,14 @@ class MainFrame(wx.Frame):
             self.ardq_p2read.close()
             self.ard.terminate()
             
-    # def startAq(self):
-    #     for m in self.mlist:
-    #         self.camq[m].put('Start')
-    #     for s in self.slist:
-    #         self.camq[s].put('Start')
-    #     for m in self.mlist:
-    #         self.camq[m].put('TrigOff')
-
-# NEW CODE: 01-14-2026 this is to stop the StimCam from acquiring when in RECORD mode and auto_stim is disabled
     def startAq(self):
-        """
-        Start acquisition on all cameras EXCEPT the stim camera
-        when in RECORD mode and auto_stim is disabled.
-        """
-
-        record_mode = (self.current_mode_tag == "REC")
-        stim_disabled = not self.auto_stim.GetValue()
-
-        for camID in self.mlist + self.slist:
-            # Skip stim camera ONLY in Record mode AND stim unchecked
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and camID == self.stim_cam_serial
-            ):
-                print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
-                continue
-
-            self.camq[camID].put('Start')
-
-        # Trigger off only for masters that are running
         for m in self.mlist:
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and m == self.stim_cam_serial
-            ):
-                continue
+            self.camq[m].put('Start')
+        for s in self.slist:
+            self.camq[s].put('Start')
+        for m in self.mlist:
             self.camq[m].put('TrigOff')
-
+        
     def stopAq(self):
         
         self.camaq.value = 0

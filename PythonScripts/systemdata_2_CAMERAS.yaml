@@ -1,0 +1,50 @@
+# Camera reference (enter serial numbers for each)
+cam1:
+  serial: 22234339
+  ismaster: true
+  crop:
+  - 54
+  - 300
+  - 56
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: sideCam
+cam2:
+  serial: 22234360
+  ismaster: false
+  crop:
+  - 42
+  - 300
+  - 49
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: frontCam
+
+
+# User information
+unitRef: christielab
+raw_data_dir: C:\RawDataLocal
+interim_data_dir: C:\RawDataLocal
+compressed_data_dir: C:\compressedData
+final_data_dir: Z:\PHYS\ChristieLab\Lab Management\Grant\reachingData\compressed_data
+COM: 4
+
+# Pellet and ROI
+axesRef: cam1
+pelletXY:
+- 249
+- 153
+roiXWYH:
+- 207
+- 12
+- 128
+- 88
+shiftFactor: 8
+
+handThreshold: 7
+pelletThreshold: 50
+stimulusThreshold: 1800

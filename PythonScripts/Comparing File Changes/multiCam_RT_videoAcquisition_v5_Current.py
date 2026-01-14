@@ -227,15 +227,6 @@ class MainFrame(wx.Frame):
                 self.camStrList.append(key)
         self.slist = list()
         self.mlist = list()
-
-
-        # NEW CODE 01-14-2026 — identify stim camera serial 
-        self.stim_cam_key = self.system_cfg.get('stimAxes', None)            # New Code
-        self.stim_cam_serial = None                                          # New Code
-        if self.stim_cam_key in self.camStrList:                             # New Code
-            self.stim_cam_serial = str(self.system_cfg[self.stim_cam_key]['serial'])  # New Code
-        # NEW CODE 01-14-2026  — identify stim camera serial
-
         for s in self.camStrList:
             if not self.system_cfg[s]['ismaster']:
                 self.slist.append(str(self.system_cfg[s]['serial']))
@@ -2771,48 +2762,14 @@ class MainFrame(wx.Frame):
             self.ardq_p2read.close()
             self.ard.terminate()
             
-    # def startAq(self):
-    #     for m in self.mlist:
-    #         self.camq[m].put('Start')
-    #     for s in self.slist:
-    #         self.camq[s].put('Start')
-    #     for m in self.mlist:
-    #         self.camq[m].put('TrigOff')
-
-# NEW CODE: 01-14-2026 this is to stop the StimCam from acquiring when in RECORD mode and auto_stim is disabled
     def startAq(self):
-        """
-        Start acquisition on all cameras EXCEPT the stim camera
-        when in RECORD mode and auto_stim is disabled.
-        """
-
-        record_mode = (self.current_mode_tag == "REC")
-        stim_disabled = not self.auto_stim.GetValue()
-
-        for camID in self.mlist + self.slist:
-            # Skip stim camera ONLY in Record mode AND stim unchecked
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and camID == self.stim_cam_serial
-            ):
-                print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
-                continue
-
-            self.camq[camID].put('Start')
-
-        # Trigger off only for masters that are running
         for m in self.mlist:
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and m == self.stim_cam_serial
-            ):
-                continue
+            self.camq[m].put('Start')
+        for s in self.slist:
+            self.camq[s].put('Start')
+        for m in self.mlist:
             self.camq[m].put('TrigOff')
-
+        
     def stopAq(self):
         
         self.camaq.value = 0
