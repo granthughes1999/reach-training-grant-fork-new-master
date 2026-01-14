@@ -2125,8 +2125,10 @@ class MainFrame(wx.Frame):
                     self.stim_status.value = 0
                     self._stim_armed = False
 
-                # dispense new pellet (non-blocking)
-                self._queue_com_sequence([2], timeout_s=3.0, poll_ms=5)
+                # FIX: Send P (get pellet) then H (go home) sequence to ensure spoon is at home
+                # before the next cycle sends M (go to mouse) command
+                # This prevents premature pellet detection while spoon is between pellet dispenser and home
+                self._queue_com_sequence([2, 1], timeout_s=5.0, poll_ms=5)
 
                 # restart pellet state machine
                 self.pellet_status = 0
