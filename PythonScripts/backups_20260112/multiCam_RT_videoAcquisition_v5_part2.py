@@ -1659,14 +1659,8 @@ class MainFrame(wx.Frame):
             # === NEW:  12-31-2025 print final summary INTO LOG ===
             total_trial_count = self.trial_reset_count + self.reach_number
             total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
-
             if total_trial_count == 0:
                 total_trial_count = 1
-                total_trial_count_w_no_pellet = 1
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-
 
             print('\n\n')
             print('───────────────────────────────────────────────')
@@ -1722,7 +1716,14 @@ class MainFrame(wx.Frame):
         objDetected = False
         if pim > self.system_cfg['pelletThreshold']:
             objDetected = True
-
+            # Ignore detection unless we are confirmed at the mouse and have waited a short dwell
+            if not hasattr(self, "_pellet_phase"):  # Ensure this attribute exists
+                self._pellet_phase = "idle"  # Default phase
+            if self._pellet_phase != "at_mouse":
+                return  # Only process detection when at the Mouse
+            if (time.time() - getattr(self, "_mouse_arrival_ts", 0)) < 0.15:  # Grace period 150ms
+                return  # Skip detection if within the dwell time window
+            
         if self.is_busy.value == -1:
             self.auto_pellet.SetValue(0)
             self.autoPellet(event=None)
@@ -1745,10 +1746,13 @@ class MainFrame(wx.Frame):
 
             if self.pellet_status == 0:
                 # Set the phase to 'to_mouse' before starting the motion
+                self._pellet_phase = "to_mouse"  # Transition: moving to the Mouse position
                 self.com.value = 3  # Send spoon to Mouse position
                 while self.com.value > 0:  # Wait until the operation completes
                     time.sleep(0.01)
-
+                # Spoon is now at the Mouse, start grace timing
+                self._pellet_phase = "at_mouse"  # Transition: spoon is now ready at Mouse
+                self._mouse_arrival_ts = time.time()  # Mark arrival time to enforce grace period
                 self.pellet_timing = time.time()
                 self.pellet_status = 1
 
@@ -2606,10 +2610,6 @@ class MainFrame(wx.Frame):
             total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
             if total_trial_count == 0:
                 total_trial_count = 1  # avoid divide-by-zero
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-                
             print('\n\n')
             print('───────────────────────────────────────────────')
             print(f'📄 {self.sess_info} Recording Summary')
