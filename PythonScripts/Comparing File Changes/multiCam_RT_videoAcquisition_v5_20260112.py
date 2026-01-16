@@ -38,177 +38,35 @@ import winsound
 import sys
 import datetime
 import io               # ← add this
-GUI_LOG_HANDLER = None  # set by MainFrame after the log textbox is created
 
-
-# ---------------------------------------------------------------------------
-# GUI log sink (wx.TextCtrl) + handler
-# ---------------------------------------------------------------------------
-
-# New Code: 01-15-2026
-GUI_LOG_HANDLER = None  # set by MainFrame after the log textbox is created
-
-# New Code: 01-15-2026
-class WxTextCtrlHandler:
-    """Thread-safe logging handler that appends formatted log lines into a wx.TextCtrl."""
-
-    def __init__(self, textctrl):
-        import logging
-
-        self._handler = logging.Handler()
-        self._handler.setLevel(logging.INFO)
-        self._textctrl = textctrl
-
-        # New Code
-        fmt = logging.Formatter("%(message)s")
-        self._handler.setFormatter(fmt)
-
-        def emit(record):
-            try:
-                msg = self._handler.format(record)
-            except Exception:
-                return
-
-            def _append():
-                tc = self._textctrl
-                if not tc or not tc.IsShownOnScreen():
-                    return
-
-                # New Code: "sticky autoscroll" — only force-scroll if user is currently at bottom
-                try:
-                    last_before = tc.GetLastPosition()                 # New Code
-                    ip_before = tc.GetInsertionPoint()                 # New Code
-                    at_bottom = (last_before - ip_before) <= 2         # New Code (tolerance)
-
-                    tc.AppendText(msg + "\n")
-
-                    if at_bottom:                                      # New Code
-                        tc.SetInsertionPointEnd()                       # New Code
-                        tc.ShowPosition(tc.GetLastPosition())           # New Code
-                except Exception:
-                    # Fallback: always try to show the end if anything above fails
-                    try:
-                        tc.AppendText(msg + "\n")
-                        tc.SetInsertionPointEnd()
-                        tc.ShowPosition(tc.GetLastPosition())
-                    except Exception:
-                        pass
-
-            try:
-                wx.CallAfter(_append)
-            except Exception:
-                pass
-
-        self._handler.emit = emit
-
-    @property
-    def handler(self):
-        return self._handler
         
-# def configure_logging(save_log_path):
-#     import logging
-#     import sys
-#     from pathlib import Path
-    
-#     # set the path for the .log to save too, unique for each session and passed in from recordcam() function 
-#     SESSION_LOG = Path(save_log_path)
-    
-#     # (TESTING NEW) 🔧 Remove any existing handlers before reconfiguring
-#     root_logger = logging.getLogger()
-#     if root_logger.handlers:
-#         for handler in root_logger.handlers[:]:
-#             root_logger.removeHandler(handler)
-#             handler.close()  # close file streams to prevent resource leaks
-    
-#     # Basic logger set up
-#     logging.basicConfig(
-#         level=logging.INFO,
-#         # New Code
-#         format="%(message)s",
-#         handlers=[
-#             logging.FileHandler(SESSION_LOG, mode='a', encoding='utf-8'),
-#             logging.StreamHandler(sys.stdout)
-#         ]
-#     )
-
-#     # New Code: 01-15-2026 re-attach GUI log handler (if GUI is up)
-#     global GUI_LOG_HANDLER
-#     if GUI_LOG_HANDLER is not None:
-#         try:
-#             logging.getLogger().addHandler(GUI_LOG_HANDLER)
-#         except Exception:
-#             pass
-#     # New Code: 01-15-2026
-
-#     # Redirect print() to logging.info() globally
-#     global print
-#     print = lambda *args, **kwargs: logging.info(' '.join(str(a) for a in args))
-
-# =========================
-# OLD CODE (current)
-# =========================
-# def configure_logging(save_log_path):
-#     root_logger = logging.getLogger()
-#     if root_logger.handlers:
-#         for handler in root_logger.handlers[:]:
-#             root_logger.removeHandler(handler)
-#             handler.close()
-#     logging.basicConfig(... FileHandler ..., StreamHandler ...)
-#     if GUI_LOG_HANDLER is not None:
-#         logging.getLogger().addHandler(GUI_LOG_HANDLER)
-
-# =========================
-# NEW CODE (replace entire function)
-# Place: overwrite your existing configure_logging definition
-# =========================
 def configure_logging(save_log_path):
     import logging
     import sys
     from pathlib import Path
-
+    
+    # set the path for the .log to save too, unique for each session and passed in from recordcam() function 
     SESSION_LOG = Path(save_log_path)
-
+    
+    # (TESTING NEW) 🔧 Remove any existing handlers before reconfiguring
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-
-    global GUI_LOG_HANDLER
-
-    # Remove/close ONLY non-GUI handlers (never close the GUI handler)
-    for h in root_logger.handlers[:]:
-        if GUI_LOG_HANDLER is not None and h is GUI_LOG_HANDLER:
-            continue
-        root_logger.removeHandler(h)
-        try:
-            h.close()
-        except Exception:
-            pass
-
-    fmt = logging.Formatter("%(message)s")
-
-    # Fresh per-session file handler
-    fh = logging.FileHandler(SESSION_LOG, mode="a", encoding="utf-8")
-    fh.setLevel(logging.INFO)
-    fh.setFormatter(fmt)
-    root_logger.addHandler(fh)
-
-    # Console handler
-    sh = logging.StreamHandler(sys.stdout)
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(fmt)
-    root_logger.addHandler(sh)
-
-    # Ensure GUI handler is attached (and not duplicated)
-    if GUI_LOG_HANDLER is not None and GUI_LOG_HANDLER not in root_logger.handlers:
-        try:
-            root_logger.addHandler(GUI_LOG_HANDLER)
-        except Exception:
-            pass
-
+    if root_logger.handlers:
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+            handler.close()  # close file streams to prevent resource leaks
+    
+    # Basic logger set up
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(SESSION_LOG, mode='a', encoding='utf-8'),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
     # Redirect print() to logging.info() globally
     global print
-    print = lambda *args, **kwargs: logging.info(" ".join(str(a) for a in args))
-
-
+    print = lambda *args, **kwargs: logging.info(' '.join(str(a) for a in args))
 # ###########################################################################
 # Class for GUI MainFrame
 # ###########################################################################
@@ -306,6 +164,8 @@ class MainFrame(wx.Frame):
         self.total_trials = 0                 # New Code: cached total_trial_count at end of session
 
             # Initialize pellet phase tracking
+        self._pellet_phase = "idle"  # Default state for spoon phase
+        self._mouse_arrival_ts = 0  # Timestamp to track Mouse arrival
             
 # Settting the GUI size and panels design
         displays = (wx.Display(i) for i in range(wx.Display.GetCount())) # Gets the number of displays
@@ -325,7 +185,41 @@ class MainFrame(wx.Frame):
               f"(from {self.config_path} → handThreshold)\n\n")
         print(f"[INFO] self.system_cfg[stimulusThreshold]: {self.system_cfg['stimulusThreshold']}")
 
+        # ༼ つ ◕_◕ ༽つ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ⇊ ☜༼ ◕_◕ ☜ ༽
+        
+        #--------- Grant Gughes, 08-15-2025  
+        #--------- Working on getting a StimROI TTL to send an actual TTL
+        #--------- This is after seeing that doing the following results in a clear TTL on the digital line 6. ( Arduino IDE > Arduino Leonardo \ COM5 > Serial Monitor + 'S' > stimROI TTL sent)
+        
+        # # New Code
+        # self._stim_thr = self.system_cfg.get('stimulusThreshold',
+        #                                      self.system_cfg.get('stimThreshold', 300))  # New Code
+        # print(f"[INFO] stimulusThreshold used: {self._stim_thr}")  # New Code
+        # self._stim_port = self.system_cfg.get('stim_ttl', {}).get('serial_port', 'COM5')  # New Code
+        # self._stim_baud = int(self.system_cfg.get('stim_ttl', {}).get('baud', 9600))    # New Code
+        # self._stim_ser = None      # New Code
+        # self._stim_armed = False   # New Code
+        # self._stim_fired = False   # New Code
+        #         # New Code
+        # self._stim_last_fire = 0.0
+        
+        # #--------- Grant Gughes, 08-19-2025  
+
+        # # Fast stim serial (dedicated Arduino for optical TTL)
+        # self._stim_ser = None
+        # try:
+        #     import serial  # pip install pyserial
+        #     self._stim_ser = serial.Serial(self._stim_port, self._stim_baud,
+        #                                    timeout=0, write_timeout=0)
+        #     self._stim_ser.reset_input_buffer()
+        #     self._stim_ser.reset_output_buffer()
+        #     print(f"[StimSER] opened {self._stim_port} @ {self._stim_baud}")
+        # except Exception as e:
+        #     print(f"[StimSER] FAILED to open {self._stim_port}: {e}  (fallback to com=16)")
+        
+        # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
  
+
         key_list = list()
         for cat in self.system_cfg.keys():
             key_list.append(cat)
@@ -335,15 +229,6 @@ class MainFrame(wx.Frame):
                 self.camStrList.append(key)
         self.slist = list()
         self.mlist = list()
-
-
-        # NEW CODE 01-14-2026 — identify stim camera serial 
-        self.stim_cam_key = self.system_cfg.get('stimAxes', None)            # New Code
-        self.stim_cam_serial = None                                          # New Code
-        if self.stim_cam_key in self.camStrList:                             # New Code
-            self.stim_cam_serial = str(self.system_cfg[self.stim_cam_key]['serial'])  # New Code
-        # NEW CODE 01-14-2026  — identify stim camera serial
-
         for s in self.camStrList:
             if not self.system_cfg[s]['ismaster']:
                 self.slist.append(str(self.system_cfg[s]['serial']))
@@ -635,6 +520,7 @@ class MainFrame(wx.Frame):
         for h in self.serHlist:
             h.Enable(False)
         
+        
         vpos+=sersize
         
         self.slider = wx.Slider(self.widget_panel, -1, 0, 0, 100,size=(300, -1), style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS | wx.SL_LABELS )
@@ -714,55 +600,10 @@ class MainFrame(wx.Frame):
         wSpacer.Add(self.check_delay, pos=(vpos,0), span=(0,2), flag=wx.LEFT, border=wSpace)
         self.check_delay.SetValue(False)
         
+        
+        
+
         vpos+=2
-
-        # NEW CODE: 01-15-2026
-         # ---- Session counters ----
-        stats_box = wx.StaticBox(self.widget_panel, label="Session Counters")
-        stats_sizer = wx.StaticBoxSizer(stats_box, wx.VERTICAL)
-
-        big = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-
-        self.lbl_trial_total = wx.StaticText(self.widget_panel, label="Trial: 0")
-        self.lbl_trial_total.SetFont(big)
-        stats_sizer.Add(self.lbl_trial_total, 0, wx.ALL, 4)
-
-        ################## New Code 01-15-2026
-
-        # New Code (replace that whole epoch section)
-        try:
-            block_size = int(self.block_size_ctrl.GetValue())
-        except Exception:
-            block_size = int(self.user_cfg.get('blockSize', 20))
-
-        if block_size <= 0:
-            block_size = 20
-
-        self.epoch_progress_label = f"0/{block_size} Baseline Epoch"
-        self.lbl_epoch = wx.StaticText(self.widget_panel, label=self.epoch_progress_label)
-        self.lbl_epoch.SetFont(big)
-        stats_sizer.Add(self.lbl_epoch, 0, wx.ALL, 4)
-
-        ################## New Code 01-15-2026
-
-        self.lbl_success = wx.StaticText(self.widget_panel, label="Successes: 0 (0.0%)")
-        self.lbl_success.SetFont(big)
-        stats_sizer.Add(self.lbl_success, 0, wx.ALL, 4)
-
-        self.lbl_early = wx.StaticText(self.widget_panel, label="Early reaches: 0 (0.0%)")
-        self.lbl_early.SetFont(big)
-        stats_sizer.Add(self.lbl_early, 0, wx.ALL, 4)
-
-        wSpacer.Add(stats_sizer, pos=(vpos,0), span=(4,3), flag=wx.EXPAND|wx.LEFT|wx.RIGHT, border=wSpace)
-
-        # New Code (replace that entire region)
-        # -------------------------------------------------------------------
-        # Initial paint (keep this here or after buttons; doesn't matter)
-        self._update_session_counters_ui()
-
-        # -------------------------------------------------------------------
-        # Bottom-row buttons (place BEFORE log box)
-        vpos += 4
         self.compress_vid = wx.Button(self.widget_panel, id=wx.ID_ANY, label="Compress Vids")
         wSpacer.Add(self.compress_vid, pos=(vpos,0), span=(0,1), flag=wx.LEFT, border=wSpace)
         self.compress_vid.Bind(wx.EVT_BUTTON, self.compressVid)
@@ -778,40 +619,6 @@ class MainFrame(wx.Frame):
         self.quit.Bind(wx.EVT_BUTTON, self.quitButton)
         self.Bind(wx.EVT_CLOSE, self.quitButton)
 
-        # -------------------------------------------------------------------
-        # Log textbox LAST (dominates remaining bottom space)
-        vpos += 1
-
-        log_box = wx.StaticBox(self.widget_panel, label="Log")
-        log_sizer = wx.StaticBoxSizer(log_box, wx.VERTICAL)
-
-        self.log_text = wx.TextCtrl(
-            self.widget_panel,
-            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2 | wx.HSCROLL
-        )
-
-        self.log_text.SetMinSize((900, 1200))  # adjust as you like
-
-        log_sizer.Add(self.log_text, 1, wx.EXPAND | wx.ALL, 4)
-
-        wSpacer.Add(
-            log_sizer,
-            pos=(vpos, 0),
-            span=(30, 3),                 # big footprint is now safe because nothing is added after
-            flag=wx.EXPAND | wx.ALL,
-            border=wSpace
-        )
-
-        # Register GUI log handler
-        global GUI_LOG_HANDLER
-        try:
-            GUI_LOG_HANDLER = WxTextCtrlHandler(self.log_text).handler
-            import logging
-            logging.getLogger().addHandler(GUI_LOG_HANDLER)
-        except Exception:
-            GUI_LOG_HANDLER = None
-
-
         self.widget_panel.SetSizer(wSpacer)
         wSpacer.Fit(self.widget_panel)
         self.widget_panel.Layout()
@@ -825,6 +632,16 @@ class MainFrame(wx.Frame):
         self.liveTimer = wx.Timer(self, wx.ID_ANY)
         self.recTimer = wx.Timer(self, wx.ID_ANY)
         
+        # --- Grant Hughes 8-19-2025 , working on stimROI --> Optical Pulses Delay
+        #self.figure,self.axes,self.canvas = self.image_panel.getfigure()
+        #self.figure.canvas.draw()
+        # New Code
+        # self.figure,self.axes,self.canvas = self.image_panel.getfigure()  # New Code
+        # self._last_draw = 0.0                                             # New Code
+        # self._draw_hz   = 30                                              # New Code
+        # self.figure.canvas.draw()                                         # New Code
+        # --- Grant Hughes 8-19-2025 , working on stimROI --> Optical Pulses Delay
+
 
         self.pellet_x = self.system_cfg['pelletXY'][0]
         self.pellet_y = self.system_cfg['pelletXY'][1]
@@ -946,43 +763,6 @@ class MainFrame(wx.Frame):
 #         print(f"[StimTEST] armed  t0={self._stim_test_t0:.6f}  riseΔ={self._stim_test_delta}")
  
  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
-
-    def _compute_epoch_label(self, total_trial_count: int) -> str:
-        """
-        Compute current epoch label from total trial attempts.
-        total_trial_count should count every trial attempt (success, early reset, no-pellet, etc.).
-        """
-        # block size (prefer GUI control if present; fall back to config)
-        try:
-            block_size = int(self.block_size_ctrl.GetValue())
-        except Exception:
-            block_size = int(getattr(self, "user_cfg", {}).get("blockSize", 20))
-
-        if block_size <= 0:
-            block_size = 20
-
-        # If no trials yet, show start-of-session state
-        if total_trial_count <= 0:
-            return f"0/{block_size} Baseline Epoch"
-
-        # 3-epoch cycle: Baseline -> Stimulation -> Washout, repeating
-        idx0 = total_trial_count - 1
-        block_index = idx0 // block_size              # 0,1,2,3,...
-        trial_in_epoch = (idx0 % block_size) + 1      # 1..block_size
-
-        phase = block_index % 3
-        if phase == 0:
-            epoch_name = "Baseline Epoch"
-        elif phase == 1:
-            epoch_name = "Stimulation Epoch"
-        else:
-            epoch_name = "Washout Epoch"
-
-        # Which cycle number (1-based)
-        cycle_num = (block_index // 3) + 1
-
-        return f"{trial_in_epoch}/{block_size} {epoch_name} #{cycle_num}"
-
     def onTrainingToggle(self, event):
         self.training_mode = bool(self.train_checkbox.GetValue())
 
@@ -1140,56 +920,13 @@ class MainFrame(wx.Frame):
         self.early_reset_trials_all.clear()    # New Code
         self.no_pellet_trials_all.clear()      # New Code
         self.total_trials = 0                  # New Code
-        total_trial_count = 0
-        self.total_trial_count = 0
-        # New Code
-        perecent_failed_reaches = 0
-        perecent_successful_reaches = 0
-
-        self._update_session_counters_ui()
-
         print(f'\n\n')
         print('----------------------------------------------------')
         print('Session Counters RESET')
         print('----------------------------------------------------\n\n')
 
         
-     # New Code 01-15-2026
-    def _update_session_counters_ui(self):
-        """Update the large on-GUI counters (trial total, successes, early reaches)."""
-        total = int(getattr(self, "trial_reset_count", 0)) + int(getattr(self, "reach_number", 0))
-        succ = int(getattr(self, "reach_number", 0))
-        early = int(getattr(self, "trial_reset_count", 0))
         
-        # New Code
-        total = (
-            int(getattr(self, "reach_number", 0)) +
-            int(getattr(self, "trial_reset_count", 0))
-        )
-        # New Code
-        total_epoch = (
-            int(getattr(self, "reach_number", 0))
-        )
-        epoch_label = self._compute_epoch_label(total_epoch)
-        self.epoch_progress_label = epoch_label
-
-        if total > 0:
-            succ_pct = (succ / total) * 100.0
-            early_pct = (early / total) * 100.0
-        else:
-            succ_pct = 0.0
-            early_pct = 0.0
-
-        if hasattr(self, "lbl_trial_total"):
-            self.lbl_trial_total.SetLabel(f"Trial: {total}")
-        if hasattr(self, "lbl_epoch"):
-            self.lbl_epoch.SetLabel(epoch_label)
-        if hasattr(self, "lbl_success"):
-            self.lbl_success.SetLabel(f"Successes: {succ} ({succ_pct:.1f}%)")
-        if hasattr(self, "lbl_early"):
-            self.lbl_early.SetLabel(f"Early reaches: {early} ({early_pct:.1f}%)")
-     # New Code 01-15-2026
-
     def make_delay_iters(self):
         minval = int(self.tone_delay_min.GetValue())
         maxval = int(self.tone_delay_max.GetValue())
@@ -1741,22 +1478,8 @@ class MainFrame(wx.Frame):
 
         print(f"[INFO] Saved non-video data to {self.sess_dir}")
 
-        # =========================
         import logging
-
-        # Close ONLY file handlers; keep GUI handler alive
-        root_logger = logging.getLogger()
-        global GUI_LOG_HANDLER
-
-        for handler in root_logger.handlers[:]:
-            if handler is GUI_LOG_HANDLER:
-                continue
-            if isinstance(handler, logging.FileHandler):
-                root_logger.removeHandler(handler)
-                try:
-                    handler.close()
-                except Exception:
-                    pass
+        logging.shutdown()
     # NEW CODE 12-30-2025 ---------------------------------------------------------
     def _save_behavior_plots(self, mode_tag: str = "REC"):
         """
@@ -1892,13 +1615,8 @@ class MainFrame(wx.Frame):
                         self.pellet_timing = time.time()
                         self.pellet_status = 3
 
-                # NEW CODE (insert immediately before that line)
-                try:
-                    self.log_text.Clear()  # New Code: reset GUI log for this session
-                except Exception:
-                    pass
-
-                self._start_nonvideo_session(mode_tag="LIVE")
+                # NEW CODE: start a LIVE session folder + log + metadata (NO VIDEO)
+                self._start_nonvideo_session(mode_tag="LIVE")      # New Code 12-30-2025
                 self.data_logging_enabled = True                   # New Code 12-30-2025
 
                             # === NEW: write header into LIVE log ===
@@ -1940,14 +1658,8 @@ class MainFrame(wx.Frame):
             # === NEW:  12-31-2025 print final summary INTO LOG ===
             total_trial_count = self.trial_reset_count + self.reach_number
             total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
-
             if total_trial_count == 0:
                 total_trial_count = 1
-                total_trial_count_w_no_pellet = 1
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-
 
             print('\n\n')
             print('───────────────────────────────────────────────')
@@ -2164,8 +1876,6 @@ class MainFrame(wx.Frame):
 
                     self.early_reset_streak += 1   # New Code: consecutive early resets
                     self.trial_reset_count += 1
-                    self._update_session_counters_ui()  # New Code
-
 
                     total_trial_count = self.trial_reset_count + self.reach_number 
                     # New Code
@@ -2217,14 +1927,12 @@ class MainFrame(wx.Frame):
                     
                 if reveal_pellet == True: # Reveal pellet
                     self.reach_number += 1
-                    self._update_session_counters_ui()  # New Code 01-15-2026
                     self._stim_armed = True   # New Code
                     
         
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
                     self.block_size_logging = block_size
                     block_index = (self.reach_number - 1) // block_size  # New Code
-                    self.block_index = block_index
                     stim_allowed = (block_index % 2 == 1)  # New Code
                     # Trial number within the current block/epoch (1..block_size)
                     trial_in_epoch = ((self.reach_number - 1) % block_size) + 1  # New Code
@@ -2249,9 +1957,7 @@ class MainFrame(wx.Frame):
                             current_block = f'Washout Epoch #{current_epoch}'  # New Code
                     
                     # Optional: human-readable progress label, e.g. "3/20 Stimulation Epoch #1"
-                    epoch_progress_label = f"{trial_in_epoch}/{block_size} {current_block}"  # New Cod
-                    self.epoch_progress_label = epoch_progress_label
-
+                    epoch_progress_label = f"{trial_in_epoch}/{block_size} {current_block}"  # New Code
                                         # New Code 11-10-25
 
                     self._stim_armed = stim_allowed
@@ -2652,15 +2358,8 @@ class MainFrame(wx.Frame):
         
     def recordCam(self, event):
         if self.rec.GetValue():
-                # NEW CODE (insert here, at the very top of the start-record block)
-            try:
-                self.log_text.Clear()  # New Code: reset GUI log for this session
-            except Exception:
-                pass
-
-            # existing code continues...
-            self.data_logging_enabled = True
             # NEW CODE 12-30-2025
+            self.data_logging_enabled = True
             self.current_mode_tag = "REC"
     
             # New Code: reset per-recording state that must not carry over
@@ -2882,24 +2581,13 @@ class MainFrame(wx.Frame):
             self.rec.SetLabel('Stop')
             self.play.SetLabel('Abort')
         else:
-            # NEW CODE
-            self.compress_vid.Enable(True)  # New Code
-
-            self.com.value = 11  # New Code
-            t0 = time.monotonic()  # New Code
-            while (self.com.value > 0) and ((time.monotonic() - t0) < 2.0):  # New Code
-                time.sleep(0.01)  # New Code
-
-            if self.com.value > 0:  # New Code
-                print("[WARN] recordCam stop: Arduino did not ACK com=11 within 2.0s; continuing shutdown.")  # New Code
-                # choose one: either force-clear or mark invalid to prevent later logic blocking again
-                self.com.value = -1  # New Code
-
-            # If arduino thread/process is alive, still request Stop (non-blocking)
-            try:  # New Code
-                self.ardq.put('Stop')  # New Code
-            except Exception as e:  # New Code
-                print(f"[WARN] recordCam stop: failed to send Arduino Stop: {e}")  # New Code
+            self.compress_vid.Enable(True)
+            self.com.value = 11
+            while self.com.value > 0:
+                time.sleep(0.01)
+            
+            if self.com.value >= 0:
+                self.ardq.put('Stop')
             
             self.meta['duration (s)']=round(self.meta['duration (s)']*(self.sliderTabs/100))
             clara.write_metadata(self.meta, self.metapath)
@@ -2911,10 +2599,6 @@ class MainFrame(wx.Frame):
             total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
             if total_trial_count == 0:
                 total_trial_count = 1  # avoid divide-by-zero
-
-            if total_trial_count_w_no_pellet == 0:
-                total_trial_count_w_no_pellet = 1
-                
             print('\n\n')
             print('───────────────────────────────────────────────')
             print(f'📄 {self.sess_info} Recording Summary')
@@ -2992,22 +2676,16 @@ class MainFrame(wx.Frame):
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
             self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
-            # =========================
+
             import logging
+            logging.shutdown()
 
-            # Close ONLY file handlers; keep GUI handler alive
+            # 2) Remove any FileHandlers so future prints aren't captured
             root_logger = logging.getLogger()
-            global GUI_LOG_HANDLER
-
             for handler in root_logger.handlers[:]:
-                if handler is GUI_LOG_HANDLER:
-                    continue
                 if isinstance(handler, logging.FileHandler):
                     root_logger.removeHandler(handler)
-                    try:
-                        handler.close()
-                    except Exception:
-                        pass
+                    handler.close()
 
                 
             self.stopAq()
@@ -3075,89 +2753,24 @@ class MainFrame(wx.Frame):
             self.ardq_p2read.close()
             self.ard.terminate()
             
-    # def startAq(self):
-    #     for m in self.mlist:
-    #         self.camq[m].put('Start')
-    #     for s in self.slist:
-    #         self.camq[s].put('Start')
-    #     for m in self.mlist:
-    #         self.camq[m].put('TrigOff')
-
-# NEW CODE: 01-14-2026 this is to stop the StimCam from acquiring when in RECORD mode and auto_stim is disabled
     def startAq(self):
-        """
-        Start acquisition on all cameras EXCEPT the stim camera
-        when in RECORD mode and auto_stim is disabled.
-        """
-
-        record_mode = (self.current_mode_tag == "REC")
-        stim_disabled = not self.auto_stim.GetValue()
-
-        for camID in self.mlist + self.slist:
-            # Skip stim camera ONLY in Record mode AND stim unchecked
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and camID == self.stim_cam_serial
-            ):
-                print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
-                continue
-
-            self.camq[camID].put('Start')
-
-        # Trigger off only for masters that are running
         for m in self.mlist:
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and m == self.stim_cam_serial
-            ):
-                continue
+            self.camq[m].put('Start')
+        for s in self.slist:
+            self.camq[s].put('Start')
+        for m in self.mlist:
             self.camq[m].put('TrigOff')
-
-    # def stopAq(self):
         
-    #     self.camaq.value = 0
-    #     for s in self.slist:
-    #         self.camq[s].put('Stop')
-    #         self.camq_p2read[s].get()
-    #     for m in self.mlist:
-    #         self.camq[m].put('Stop')
-    #         self.camq_p2read[m].get()
-
-    def stopAq(self, timeout_s=5.0):
-
-        """
-        Stop acquisition on all camera processes without freezing the GUI forever.
-        """
-
+    def stopAq(self):
+        
         self.camaq.value = 0
-
-        # --- OLD CODE ---
-        # for s in self.slist:
-        #     self.camq[s].put('Stop')
-        #     self.camq_p2read[s].get()
-        # for m in self.mlist:
-        #     self.camq[m].put('Stop')
-        #     self.camq_p2read[m].get()
-
-        # --- NEW CODE ---
-        for s in self.slist:  # New Code
-            self.camq[s].put('Stop')  # New Code
-            try:  # New Code
-                self.camq_p2read[s].get(timeout=timeout_s)  # New Code
-            except Exception as e:  # New Code
-                print(f"[WARN] stopAq: slave cam {s} did not ACK Stop within {timeout_s}s: {e}")  # New Code
-
-        for m in self.mlist:  # New Code
-            self.camq[m].put('Stop')  # New Code
-            try:  # New Code
-                self.camq_p2read[m].get(timeout=timeout_s)  # New Code
-            except Exception as e:  # New Code
-                print(f"[WARN] stopAq: master cam {m} did not ACK Stop within {timeout_s}s: {e}")  # New Code
-  
+        for s in self.slist:
+            self.camq[s].put('Stop')
+            self.camq_p2read[s].get()
+        for m in self.mlist:
+            self.camq[m].put('Stop')
+            self.camq_p2read[m].get()
+        
     def updateSettings(self, event):
         self.system_cfg = clara.read_config()
         self.aqW = list()

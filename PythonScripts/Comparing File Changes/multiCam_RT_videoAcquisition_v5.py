@@ -70,29 +70,8 @@ class WxTextCtrlHandler:
                 return
 
             def _append():
-                tc = self._textctrl
-                if not tc or not tc.IsShownOnScreen():
-                    return
-
-                # New Code: "sticky autoscroll" — only force-scroll if user is currently at bottom
-                try:
-                    last_before = tc.GetLastPosition()                 # New Code
-                    ip_before = tc.GetInsertionPoint()                 # New Code
-                    at_bottom = (last_before - ip_before) <= 2         # New Code (tolerance)
-
-                    tc.AppendText(msg + "\n")
-
-                    if at_bottom:                                      # New Code
-                        tc.SetInsertionPointEnd()                       # New Code
-                        tc.ShowPosition(tc.GetLastPosition())           # New Code
-                except Exception:
-                    # Fallback: always try to show the end if anything above fails
-                    try:
-                        tc.AppendText(msg + "\n")
-                        tc.SetInsertionPointEnd()
-                        tc.ShowPosition(tc.GetLastPosition())
-                    except Exception:
-                        pass
+                if self._textctrl and self._textctrl.IsShownOnScreen():
+                    self._textctrl.AppendText(msg + "\n")
 
             try:
                 wx.CallAfter(_append)
@@ -105,110 +84,44 @@ class WxTextCtrlHandler:
     def handler(self):
         return self._handler
         
-# def configure_logging(save_log_path):
-#     import logging
-#     import sys
-#     from pathlib import Path
-    
-#     # set the path for the .log to save too, unique for each session and passed in from recordcam() function 
-#     SESSION_LOG = Path(save_log_path)
-    
-#     # (TESTING NEW) 🔧 Remove any existing handlers before reconfiguring
-#     root_logger = logging.getLogger()
-#     if root_logger.handlers:
-#         for handler in root_logger.handlers[:]:
-#             root_logger.removeHandler(handler)
-#             handler.close()  # close file streams to prevent resource leaks
-    
-#     # Basic logger set up
-#     logging.basicConfig(
-#         level=logging.INFO,
-#         # New Code
-#         format="%(message)s",
-#         handlers=[
-#             logging.FileHandler(SESSION_LOG, mode='a', encoding='utf-8'),
-#             logging.StreamHandler(sys.stdout)
-#         ]
-#     )
-
-#     # New Code: 01-15-2026 re-attach GUI log handler (if GUI is up)
-#     global GUI_LOG_HANDLER
-#     if GUI_LOG_HANDLER is not None:
-#         try:
-#             logging.getLogger().addHandler(GUI_LOG_HANDLER)
-#         except Exception:
-#             pass
-#     # New Code: 01-15-2026
-
-#     # Redirect print() to logging.info() globally
-#     global print
-#     print = lambda *args, **kwargs: logging.info(' '.join(str(a) for a in args))
-
-# =========================
-# OLD CODE (current)
-# =========================
-# def configure_logging(save_log_path):
-#     root_logger = logging.getLogger()
-#     if root_logger.handlers:
-#         for handler in root_logger.handlers[:]:
-#             root_logger.removeHandler(handler)
-#             handler.close()
-#     logging.basicConfig(... FileHandler ..., StreamHandler ...)
-#     if GUI_LOG_HANDLER is not None:
-#         logging.getLogger().addHandler(GUI_LOG_HANDLER)
-
-# =========================
-# NEW CODE (replace entire function)
-# Place: overwrite your existing configure_logging definition
-# =========================
 def configure_logging(save_log_path):
     import logging
     import sys
     from pathlib import Path
-
+    
+    # set the path for the .log to save too, unique for each session and passed in from recordcam() function 
     SESSION_LOG = Path(save_log_path)
-
+    
+    # (TESTING NEW) 🔧 Remove any existing handlers before reconfiguring
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    if root_logger.handlers:
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+            handler.close()  # close file streams to prevent resource leaks
+    
+    # Basic logger set up
+    logging.basicConfig(
+        level=logging.INFO,
+        # New Code
+        format="%(message)s",
+        handlers=[
+            logging.FileHandler(SESSION_LOG, mode='a', encoding='utf-8'),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
 
+    # New Code: 01-15-2026 re-attach GUI log handler (if GUI is up)
     global GUI_LOG_HANDLER
-
-    # Remove/close ONLY non-GUI handlers (never close the GUI handler)
-    for h in root_logger.handlers[:]:
-        if GUI_LOG_HANDLER is not None and h is GUI_LOG_HANDLER:
-            continue
-        root_logger.removeHandler(h)
+    if GUI_LOG_HANDLER is not None:
         try:
-            h.close()
+            logging.getLogger().addHandler(GUI_LOG_HANDLER)
         except Exception:
             pass
-
-    fmt = logging.Formatter("%(message)s")
-
-    # Fresh per-session file handler
-    fh = logging.FileHandler(SESSION_LOG, mode="a", encoding="utf-8")
-    fh.setLevel(logging.INFO)
-    fh.setFormatter(fmt)
-    root_logger.addHandler(fh)
-
-    # Console handler
-    sh = logging.StreamHandler(sys.stdout)
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(fmt)
-    root_logger.addHandler(sh)
-
-    # Ensure GUI handler is attached (and not duplicated)
-    if GUI_LOG_HANDLER is not None and GUI_LOG_HANDLER not in root_logger.handlers:
-        try:
-            root_logger.addHandler(GUI_LOG_HANDLER)
-        except Exception:
-            pass
+    # New Code: 01-15-2026
 
     # Redirect print() to logging.info() globally
     global print
-    print = lambda *args, **kwargs: logging.info(" ".join(str(a) for a in args))
-
-
+    print = lambda *args, **kwargs: logging.info(' '.join(str(a) for a in args))
 # ###########################################################################
 # Class for GUI MainFrame
 # ###########################################################################
@@ -981,7 +894,7 @@ class MainFrame(wx.Frame):
         # Which cycle number (1-based)
         cycle_num = (block_index // 3) + 1
 
-        return f"{trial_in_epoch}/{block_size} {epoch_name} #{cycle_num}"
+        return f"{trial_in_epoch}/{block_size} {epoch_name} (Cycle {cycle_num})"
 
     def onTrainingToggle(self, event):
         self.training_mode = bool(self.train_checkbox.GetValue())
@@ -1164,13 +1077,11 @@ class MainFrame(wx.Frame):
         # New Code
         total = (
             int(getattr(self, "reach_number", 0)) +
-            int(getattr(self, "trial_reset_count", 0))
+            int(getattr(self, "trial_reset_count", 0)) +
+            int(getattr(self, "no_pellet_detect_count", 0))
         )
-        # New Code
-        total_epoch = (
-            int(getattr(self, "reach_number", 0))
-        )
-        epoch_label = self._compute_epoch_label(total_epoch)
+
+        epoch_label = self._compute_epoch_label(total)
         self.epoch_progress_label = epoch_label
 
         if total > 0:
@@ -1741,22 +1652,8 @@ class MainFrame(wx.Frame):
 
         print(f"[INFO] Saved non-video data to {self.sess_dir}")
 
-        # =========================
         import logging
-
-        # Close ONLY file handlers; keep GUI handler alive
-        root_logger = logging.getLogger()
-        global GUI_LOG_HANDLER
-
-        for handler in root_logger.handlers[:]:
-            if handler is GUI_LOG_HANDLER:
-                continue
-            if isinstance(handler, logging.FileHandler):
-                root_logger.removeHandler(handler)
-                try:
-                    handler.close()
-                except Exception:
-                    pass
+        logging.shutdown()
     # NEW CODE 12-30-2025 ---------------------------------------------------------
     def _save_behavior_plots(self, mode_tag: str = "REC"):
         """
@@ -1892,13 +1789,8 @@ class MainFrame(wx.Frame):
                         self.pellet_timing = time.time()
                         self.pellet_status = 3
 
-                # NEW CODE (insert immediately before that line)
-                try:
-                    self.log_text.Clear()  # New Code: reset GUI log for this session
-                except Exception:
-                    pass
-
-                self._start_nonvideo_session(mode_tag="LIVE")
+                # NEW CODE: start a LIVE session folder + log + metadata (NO VIDEO)
+                self._start_nonvideo_session(mode_tag="LIVE")      # New Code 12-30-2025
                 self.data_logging_enabled = True                   # New Code 12-30-2025
 
                             # === NEW: write header into LIVE log ===
@@ -2652,15 +2544,8 @@ class MainFrame(wx.Frame):
         
     def recordCam(self, event):
         if self.rec.GetValue():
-                # NEW CODE (insert here, at the very top of the start-record block)
-            try:
-                self.log_text.Clear()  # New Code: reset GUI log for this session
-            except Exception:
-                pass
-
-            # existing code continues...
-            self.data_logging_enabled = True
             # NEW CODE 12-30-2025
+            self.data_logging_enabled = True
             self.current_mode_tag = "REC"
     
             # New Code: reset per-recording state that must not carry over
@@ -2992,22 +2877,16 @@ class MainFrame(wx.Frame):
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
             self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
-            # =========================
+
             import logging
+            logging.shutdown()
 
-            # Close ONLY file handlers; keep GUI handler alive
+            # 2) Remove any FileHandlers so future prints aren't captured
             root_logger = logging.getLogger()
-            global GUI_LOG_HANDLER
-
             for handler in root_logger.handlers[:]:
-                if handler is GUI_LOG_HANDLER:
-                    continue
                 if isinstance(handler, logging.FileHandler):
                     root_logger.removeHandler(handler)
-                    try:
-                        handler.close()
-                    except Exception:
-                        pass
+                    handler.close()
 
                 
             self.stopAq()
