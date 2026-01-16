@@ -1274,11 +1274,11 @@ class MainFrame(wx.Frame):
         elif len(delays) > n:
             delays = delays[:n]
 
-        # New Code
+            # New Code
         if len(stims) < n:
             stims = stims + ([False] * (n - len(stims)))
         elif len(stims) > n:
-            stims = stims[:n]
+            stims = stims[:n]       
 
         self.trial_ax.clear()
         self.trial_ax.set_title("Trials (green=success, red=early; red labeled with intended delay ms)")
@@ -1286,7 +1286,6 @@ class MainFrame(wx.Frame):
         self.trial_ax.set_yticks([])
         self.trial_ax.set_ylim(0.5, 1.5)
         self.trial_ax.set_xlim(0.5, max(10.5, n + 0.5))
-
         # New Code: shade stimulation epochs
         in_span = False
         span_start = None
@@ -1297,6 +1296,7 @@ class MainFrame(wx.Frame):
                 span_start = i + 1  # trial index (1-based)
             if in_span and ((not stims[i]) or (i == n - 1)):
                 span_end = (i + 1) if stims[i] else i  # inclusive end (1-based)
+                # shade from (start-0.5) to (end+0.5) to cover full trial bars
                 self.trial_ax.axvspan(span_start - 0.5, span_end + 0.5, alpha=0.20, facecolor="lightskyblue", zorder=0)
                 in_span = False
                 span_start = None
@@ -1308,25 +1308,10 @@ class MainFrame(wx.Frame):
 
             if o == "success":
                 self.trial_ax.plot([t - 0.45, t + 0.45], [y, y], color="green", linewidth=4)
-
             elif o == "early_reset":
                 self.trial_ax.plot([t - 0.45, t + 0.45], [y, y], color="red", linewidth=4)
-
-                # -------------------------------
-                # old code:
-                # if d is not None:
-                #     self.trial_ax.text(t, y + 0.08, f"{int(d)}", ha="center", va="bottom", fontsize=7)
-                # -------------------------------
-
-                # New Code: only label the FIRST early-reset in a consecutive run
                 if d is not None:
-                    prev_is_early = (t > 1) and (outcomes[t - 2] == "early_reset")  # New Code
-                    prev_delay = delays[t - 2] if (t > 1) else None                 # New Code
-
-                    label_this = (not prev_is_early) or (prev_delay != d)           # New Code
-                    if label_this:                                                  # New Code
-                        self.trial_ax.text(t, y + 0.08, f"{int(d)}", ha="center", va="bottom", fontsize=7)  # New Code
-
+                    self.trial_ax.text(t, y + 0.08, f"{int(d)}", ha="center", va="bottom", fontsize=7)
             else:
                 # Keep semantics tight: only show success vs early on this plot
                 continue
@@ -2007,48 +1992,48 @@ class MainFrame(wx.Frame):
         # =========================
         # NEW CODE (add this method inside MainFrame)
         # =========================
-    def _save_gui_trial_timeline_png(self, mode_tag="REC"):
-        """
-        Save the GUI-embedded trial timeline plot (self.trial_fig) as a PNG
-        into the current session directory.
-        """
-        from pathlib import Path
-        import time
+        def _save_gui_trial_timeline_png(self, mode_tag="REC"):
+            """
+            Save the GUI-embedded trial timeline plot (self.trial_fig) as a PNG
+            into the current session directory.
+            """
+            from pathlib import Path
+            import time
 
-        # Must have a session directory and the GUI figure
-        if not hasattr(self, "sess_dir") or not self.sess_dir:
-            return
-        if not hasattr(self, "trial_fig") or self.trial_fig is None:
-            return
+            # Must have a session directory and the GUI figure
+            if not hasattr(self, "sess_dir") or not self.sess_dir:
+                return
+            if not hasattr(self, "trial_fig") or self.trial_fig is None:
+                return
 
-        out_dir = Path(self.sess_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
+            out_dir = Path(self.sess_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Use your session naming convention if available
-        date_string = getattr(self, "date_string", time.strftime("%Y%m%d"))
-        unit_ref = ""
-        try:
-            unit_ref = self.system_cfg.get("unitRef", "")
-        except Exception:
+            # Use your session naming convention if available
+            date_string = getattr(self, "date_string", time.strftime("%Y%m%d"))
             unit_ref = ""
+            try:
+                unit_ref = self.system_cfg.get("unitRef", "")
+            except Exception:
+                unit_ref = ""
 
-        sess_string = getattr(self, "sess_string", "Session")
-        fname = f"{date_string}_{unit_ref}_{sess_string}_{mode_tag}_GUI_trial_timeline.png".replace("__", "_")
-        out_path = out_dir / fname
+            sess_string = getattr(self, "sess_string", "Session")
+            fname = f"{date_string}_{unit_ref}_{sess_string}_{mode_tag}_GUI_trial_timeline.png".replace("__", "_")
+            out_path = out_dir / fname
 
-        # Ensure the latest draw state is captured
-        try:
-            if hasattr(self, "trial_canvas") and self.trial_canvas is not None:
-                self.trial_canvas.draw()
-        except Exception:
-            pass
+            # Ensure the latest draw state is captured
+            try:
+                if hasattr(self, "trial_canvas") and self.trial_canvas is not None:
+                    self.trial_canvas.draw()
+            except Exception:
+                pass
 
-        # Save the exact GUI figure
-        try:
-            self.trial_fig.savefig(out_path, dpi=200, bbox_inches="tight")
-            print(f"[INFO] Saved GUI trial timeline plot to {out_path}")
-        except Exception as e:
-            print(f"[WARN] Failed to save GUI trial timeline plot: {e}")
+            # Save the exact GUI figure
+            try:
+                self.trial_fig.savefig(out_path, dpi=200, bbox_inches="tight")
+                print(f"[INFO] Saved GUI trial timeline plot to {out_path}")
+            except Exception as e:
+                print(f"[WARN] Failed to save GUI trial timeline plot: {e}")
 
     def liveFeed(self, event):
         if self.play.GetLabel() == 'Abort':
@@ -3068,14 +3053,24 @@ class MainFrame(wx.Frame):
             shutil.copyfile(sysconfigname,os.path.join(self.sess_dir,syscopyname))
             
             
-            # NEW CODE (working behavior)  # New Code
-            for ndx, s in enumerate(self.camStrList):  # New Code
-                camID = str(self.system_cfg[s]['serial'])  # New Code
-                name_base = '%s_%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string, self.system_cfg[s]['nickname'])  # New Code
-                path_base = os.path.join(self.sess_dir, name_base)  # New Code
+            for ndx, s in enumerate(self.camStrList):
+                camID = str(self.system_cfg[s]['serial'])
+                name_base = '%s_%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string, self.system_cfg[s]['nickname'])
+                path_base = os.path.join(self.sess_dir,name_base)
+                # NEW CODE
                 self.camq[camID].put(path_base)  # New Code
-                self.camq_p2read[camID].get()  # New Code  (block until ACK; do NOT reset threads here)
-                        
+                try:  # New Code
+                    self.camq_p2read[camID].get(timeout=5.0)  # New Code
+                except Exception as e:  # New Code
+                    print(f"[WARN] recordCam start: cam {camID} did not ACK path within 5s: {e}")  # New Code
+                    # Hard recovery: reinit camera threads, then retry once  # New Code
+                    self.deinitThreads()  # New Code
+                    self.camReset(event)  # New Code
+                    self.initThreads()    # New Code
+                    self.updateSettings(event)  # New Code
+                    self.camq[camID].put(path_base)  # New Code
+                    self.camq_p2read[camID].get(timeout=5.0)  # New Code
+            
             if self.com.value >= 0:
                 self.ardq.put('recordPrep')
                 name_base = '%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string)
@@ -3211,8 +3206,8 @@ class MainFrame(wx.Frame):
 
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
-            self._save_behavior_plots(mode_tag='REC')  # New Code: saves 3 PNG plots into sess_dir
-            self._save_gui_trial_timeline_png(mode_tag='REC')  # New Code: saves the GUI timeline PNG
+            self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
+            self._save_gui_trial_timeline_png(mode_tag=self.current_mode_tag)  # New Code: saves the GUI timeline PNG
 
             # =========================
             import logging

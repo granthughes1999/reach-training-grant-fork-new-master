@@ -48,20 +48,18 @@ GUI_LOG_HANDLER = None  # set by MainFrame after the log textbox is created
 # New Code: 01-15-2026
 GUI_LOG_HANDLER = None  # set by MainFrame after the log textbox is created
 
-# =========================
-# NEW CODE (replace entire class)
-# =========================
-# New Code: fixed handler that actually appends to the TextCtrl
-# NEW CODE (replace entire class)  ---------------------------------
+# New Code: 01-15-2026
 class WxTextCtrlHandler:
     """Thread-safe logging handler that appends formatted log lines into a wx.TextCtrl."""
 
     def __init__(self, textctrl):
         import logging
+
         self._handler = logging.Handler()
         self._handler.setLevel(logging.INFO)
         self._textctrl = textctrl
 
+        # New Code
         fmt = logging.Formatter("%(message)s")
         self._handler.setFormatter(fmt)
 
@@ -73,26 +71,31 @@ class WxTextCtrlHandler:
 
             def _append():
                 tc = self._textctrl
-                if not tc:
+                if not tc or not tc.IsShownOnScreen():
                     return
+
+                # New Code: "sticky autoscroll" — only force-scroll if user is currently at bottom
                 try:
-                    tc.Freeze()
+                    last_before = tc.GetLastPosition()                 # New Code
+                    ip_before = tc.GetInsertionPoint()                 # New Code
+                    at_bottom = (last_before - ip_before) <= 2         # New Code (tolerance)
+
                     tc.AppendText(msg + "\n")
 
-                    # Force view to newest line (fixes “stuck at top”)
-                    tc.SetInsertionPointEnd()                 # New Code
-                    tc.ShowPosition(tc.GetLastPosition())     # New Code
-                finally:
+                    if at_bottom:                                      # New Code
+                        tc.SetInsertionPointEnd()                       # New Code
+                        tc.ShowPosition(tc.GetLastPosition())           # New Code
+                except Exception:
+                    # Fallback: always try to show the end if anything above fails
                     try:
-                        tc.Thaw()
+                        tc.AppendText(msg + "\n")
+                        tc.SetInsertionPointEnd()
+                        tc.ShowPosition(tc.GetLastPosition())
                     except Exception:
                         pass
 
             try:
-                if wx.IsMainThread():
-                    _append()
-                else:
-                    wx.CallAfter(_append)
+                wx.CallAfter(_append)
             except Exception:
                 pass
 
@@ -101,6 +104,7 @@ class WxTextCtrlHandler:
     @property
     def handler(self):
         return self._handler
+        
 # def configure_logging(save_log_path):
 #     import logging
 #     import sys
@@ -300,8 +304,6 @@ class MainFrame(wx.Frame):
         self.early_reset_trials_all = []      # New Code: total-trial-index for early resets
         self.no_pellet_trials_all = []        # New Code: total-trial-index for no-pellet detections
         self.total_trials = 0                 # New Code: cached total_trial_count at end of session
-        self.trial_delay_ms_all = []  # aligned to trial_outcomes_all; int (ms) or None
-        self.trial_is_stim_all = []  # aligned 1:1 with trial_outcomes_all
 
             # Initialize pellet phase tracking
             
@@ -752,36 +754,17 @@ class MainFrame(wx.Frame):
         stats_sizer.Add(self.lbl_early, 0, wx.ALL, 4)
 
         wSpacer.Add(stats_sizer, pos=(vpos,0), span=(4,3), flag=wx.EXPAND|wx.LEFT|wx.RIGHT, border=wSpace)
-        # New Code: advance vpos past the stats_sizer footprint (4 rows)
-        vpos += 4  # New Code
+
         # New Code (replace that entire region)
         # -------------------------------------------------------------------
         # Initial paint (keep this here or after buttons; doesn't matter)
         self._update_session_counters_ui()
-        # New Code
-        # -------------------------------------------------------------------
-        # Trial timeline plot (real-time) -- occupies rows vpos..vpos+3, cols 0..2
-        plot_row = vpos  # New Code
-
-        trial_box = wx.StaticBox(self.widget_panel, label="Trial Timeline (Success vs Early Reach; failed shows delay)")  # New Code
-        trial_sizer = wx.StaticBoxSizer(trial_box, wx.VERTICAL)  # New Code
-
-        self.trial_fig = Figure(figsize=(6, 2))  # New Code
-        self.trial_ax = self.trial_fig.add_subplot(111)  # New Code
-        self.trial_canvas = FigureCanvas(self.widget_panel, -1, self.trial_fig)  # New Code
-        self.trial_canvas.SetMinSize((900, 220))  # New Code
-
-        trial_sizer.Add(self.trial_canvas, 1, wx.EXPAND | wx.ALL, 4)  # New Code
-        wSpacer.Add(trial_sizer, pos=(plot_row, 0), span=(4, 3), flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=wSpace)  # New Code
-
-        self._init_trial_timeline_plot()  # New Code
-
-        vpos = plot_row + 4  # New Code (advance past the plot rows)
 
         # -------------------------------------------------------------------
         # Bottom-row buttons (place BEFORE log box)
+        vpos += 4
         self.compress_vid = wx.Button(self.widget_panel, id=wx.ID_ANY, label="Compress Vids")
-        wSpacer.Add(self.compress_vid, pos=(vpos,0), span=(1,1), flag=wx.LEFT, border=wSpace)  # New Code (span fixed)
+        wSpacer.Add(self.compress_vid, pos=(vpos,0), span=(0,1), flag=wx.LEFT, border=wSpace)
         self.compress_vid.Bind(wx.EVT_BUTTON, self.compressVid)
         # self.compress_vid.Enable(False)
         
@@ -802,22 +785,19 @@ class MainFrame(wx.Frame):
         log_box = wx.StaticBox(self.widget_panel, label="Log")
         log_sizer = wx.StaticBoxSizer(log_box, wx.VERTICAL)
 
-        # =========================
         self.log_text = wx.TextCtrl(
             self.widget_panel,
-            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2 | wx.VSCROLL | wx.HSCROLL | wx.TE_DONTWRAP
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2 | wx.HSCROLL
         )
-        # NEW CODE
-        self.log_text.SetMinSize((900, 150))
 
+        self.log_text.SetMinSize((900, 1200))  # adjust as you like
 
         log_sizer.Add(self.log_text, 1, wx.EXPAND | wx.ALL, 4)
 
-        # NEW CODE
         wSpacer.Add(
             log_sizer,
             pos=(vpos, 0),
-            span=(4, 3),                  # ← reasonable height
+            span=(30, 3),                 # big footprint is now safe because nothing is added after
             flag=wx.EXPAND | wx.ALL,
             border=wSpace
         )
@@ -833,13 +813,6 @@ class MainFrame(wx.Frame):
 
 
         self.widget_panel.SetSizer(wSpacer)
-        # =========================
-        # NEW CODE (insert right after self.widget_panel.SetSizer(wSpacer))
-        # =========================
-        wSpacer.AddGrowableCol(0)
-        wSpacer.AddGrowableCol(1)
-        wSpacer.AddGrowableCol(2)
-        wSpacer.AddGrowableRow(vpos)  # vpos is the row where you placed the log box
         wSpacer.Fit(self.widget_panel)
         self.widget_panel.Layout()
         
@@ -973,6 +946,7 @@ class MainFrame(wx.Frame):
 #         print(f"[StimTEST] armed  t0={self._stim_test_t0:.6f}  riseΔ={self._stim_test_delta}")
  
  # ༼ つ ◕_◕ ༽つ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈ ⇈  ☜༼ ◕_◕ ☜ ༽
+
     def _compute_epoch_label(self, total_trial_count: int) -> str:
         """
         Compute current epoch label from total trial attempts.
@@ -991,27 +965,23 @@ class MainFrame(wx.Frame):
         if total_trial_count <= 0:
             return f"0/{block_size} Baseline Epoch"
 
+        # 3-epoch cycle: Baseline -> Stimulation -> Washout, repeating
         idx0 = total_trial_count - 1
         block_index = idx0 // block_size              # 0,1,2,3,...
         trial_in_epoch = (idx0 % block_size) + 1      # 1..block_size
 
-        # old code: phase = block_index % 3
-        # old code: Baseline -> Stimulation -> Washout repeating
-        if block_index == 0:
-            epoch_name = "Baseline Epoch"  # New Code
-            cycle_num = 1                  # New Code (Baseline is cycle 1)
+        phase = block_index % 3
+        if phase == 0:
+            epoch_name = "Baseline Epoch"
+        elif phase == 1:
+            epoch_name = "Stimulation Epoch"
         else:
-            # New Code: alternate Stim/Wash starting at block 1
-            # block_index: 1->Stim, 2->Wash, 3->Stim, 4->Wash, ...
-            is_stim = ((block_index - 1) % 2) == 0     # New Code
-            epoch_name = "Stimulation Epoch" if is_stim else "Washout Epoch"  # New Code
+            epoch_name = "Washout Epoch"
 
-            # New Code: count cycles as Stim/Wash pairs (1-based), after baseline
-            # blocks 1-2 => cycle 1, blocks 3-4 => cycle 2, ...
-            cycle_num = ((block_index - 1) // 2) + 1   # New Code
+        # Which cycle number (1-based)
+        cycle_num = (block_index // 3) + 1
 
         return f"{trial_in_epoch}/{block_size} {epoch_name} #{cycle_num}"
-
 
     def onTrainingToggle(self, event):
         self.training_mode = bool(self.train_checkbox.GetValue())
@@ -1177,10 +1147,7 @@ class MainFrame(wx.Frame):
         perecent_successful_reaches = 0
 
         self._update_session_counters_ui()
-        # New Code
-        self.trial_delay_ms_all.clear()
-        self._update_trial_timeline_plot()
-        self.trial_is_stim_all.clear()
+
         print(f'\n\n')
         print('----------------------------------------------------')
         print('Session Counters RESET')
@@ -1222,118 +1189,6 @@ class MainFrame(wx.Frame):
         if hasattr(self, "lbl_early"):
             self.lbl_early.SetLabel(f"Early reaches: {early} ({early_pct:.1f}%)")
      # New Code 01-15-2026
-
-    def _init_trial_timeline_plot(self):
-        # New Code
-        self.trial_ax.clear()
-        self.trial_ax.set_title("Trials (green=success, red=early; red labeled with intended delay ms)")
-        self.trial_ax.set_xlabel("Trial # (attempt index)")
-        self.trial_ax.set_yticks([])
-        self.trial_ax.set_ylim(0.5, 1.5)
-        self.trial_ax.set_xlim(0.5, 10.5)  # will expand dynamically
-        self.trial_canvas.draw()
-
-    def _get_epoch_type_for_current_trial(self, use_prospective_reach: bool = True):
-        """
-        Returns (epoch_type_str, is_stim_bool).
-        - use_prospective_reach=True  : use reach_number+1 (correct for early resets, which occur before reach_number increments)
-        - use_prospective_reach=False : use reach_number   (correct for success, which occurs after reach_number increments)
-        """
-        # old code
-        # prospective_reach = int(getattr(self, "reach_number", 0)) + 1
-
-        # New Code
-        block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, "block_size_ctrl") else int(self.user_cfg.get("blockSize", 20))
-        rn = int(getattr(self, "reach_number", 0))
-        reach_idx = (rn + 1) if use_prospective_reach else rn  # New Code
-
-        block_index = (reach_idx - 1) // block_size  # New Code
-
-        if block_index == 0:
-            return "baseline", False  # New Code
-
-        is_stim = (block_index % 2 == 1)  # New Code
-        return ("stimulation" if is_stim else "washout"), is_stim  # New Code
-
-
-    def _update_trial_timeline_plot(self):
-        # New Code
-        outcomes = list(getattr(self, "trial_outcomes_all", []))
-        delays = list(getattr(self, "trial_delay_ms_all", []))
-        # New Code
-        stims = list(getattr(self, "trial_is_stim_all", []))
-
-        n = len(outcomes)
-        if n == 0:
-            self._init_trial_timeline_plot()
-            return
-
-        # Ensure delays is same length as outcomes
-        if len(delays) < n:
-            delays = delays + ([None] * (n - len(delays)))
-        elif len(delays) > n:
-            delays = delays[:n]
-
-        # New Code
-        if len(stims) < n:
-            stims = stims + ([False] * (n - len(stims)))
-        elif len(stims) > n:
-            stims = stims[:n]
-
-        self.trial_ax.clear()
-        self.trial_ax.set_title("Trials (green=success, red=early; red labeled with intended delay ms)")
-        self.trial_ax.set_xlabel("Trial # (attempt index)")
-        self.trial_ax.set_yticks([])
-        self.trial_ax.set_ylim(0.5, 1.5)
-        self.trial_ax.set_xlim(0.5, max(10.5, n + 0.5))
-
-        # New Code: shade stimulation epochs
-        in_span = False
-        span_start = None
-
-        for i in range(n):
-            if stims[i] and not in_span:
-                in_span = True
-                span_start = i + 1  # trial index (1-based)
-            if in_span and ((not stims[i]) or (i == n - 1)):
-                span_end = (i + 1) if stims[i] else i  # inclusive end (1-based)
-                self.trial_ax.axvspan(span_start - 0.5, span_end + 0.5, alpha=0.20, facecolor="lightskyblue", zorder=0)
-                in_span = False
-                span_start = None
-
-        y = 1.0
-        for t in range(1, n + 1):
-            o = outcomes[t - 1]
-            d = delays[t - 1]
-
-            if o == "success":
-                self.trial_ax.plot([t - 0.45, t + 0.45], [y, y], color="green", linewidth=4)
-
-            elif o == "early_reset":
-                self.trial_ax.plot([t - 0.45, t + 0.45], [y, y], color="red", linewidth=4)
-
-                # -------------------------------
-                # old code:
-                # if d is not None:
-                #     self.trial_ax.text(t, y + 0.08, f"{int(d)}", ha="center", va="bottom", fontsize=7)
-                # -------------------------------
-
-                # New Code: only label the FIRST early-reset in a consecutive run
-                if d is not None:
-                    prev_is_early = (t > 1) and (outcomes[t - 2] == "early_reset")  # New Code
-                    prev_delay = delays[t - 2] if (t > 1) else None                 # New Code
-
-                    label_this = (not prev_is_early) or (prev_delay != d)           # New Code
-                    if label_this:                                                  # New Code
-                        self.trial_ax.text(t, y + 0.08, f"{int(d)}", ha="center", va="bottom", fontsize=7)  # New Code
-
-            else:
-                # Keep semantics tight: only show success vs early on this plot
-                continue
-
-        self.trial_canvas.draw()
-
-
 
     def make_delay_iters(self):
         minval = int(self.tone_delay_min.GetValue())
@@ -2004,51 +1859,6 @@ class MainFrame(wx.Frame):
         except Exception as e:
             # keep acquisition robust: never crash end-of-session saving
             print(f"[WARN] Plot saving failed: {e}")
-        # =========================
-        # NEW CODE (add this method inside MainFrame)
-        # =========================
-    def _save_gui_trial_timeline_png(self, mode_tag="REC"):
-        """
-        Save the GUI-embedded trial timeline plot (self.trial_fig) as a PNG
-        into the current session directory.
-        """
-        from pathlib import Path
-        import time
-
-        # Must have a session directory and the GUI figure
-        if not hasattr(self, "sess_dir") or not self.sess_dir:
-            return
-        if not hasattr(self, "trial_fig") or self.trial_fig is None:
-            return
-
-        out_dir = Path(self.sess_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-
-        # Use your session naming convention if available
-        date_string = getattr(self, "date_string", time.strftime("%Y%m%d"))
-        unit_ref = ""
-        try:
-            unit_ref = self.system_cfg.get("unitRef", "")
-        except Exception:
-            unit_ref = ""
-
-        sess_string = getattr(self, "sess_string", "Session")
-        fname = f"{date_string}_{unit_ref}_{sess_string}_{mode_tag}_GUI_trial_timeline.png".replace("__", "_")
-        out_path = out_dir / fname
-
-        # Ensure the latest draw state is captured
-        try:
-            if hasattr(self, "trial_canvas") and self.trial_canvas is not None:
-                self.trial_canvas.draw()
-        except Exception:
-            pass
-
-        # Save the exact GUI figure
-        try:
-            self.trial_fig.savefig(out_path, dpi=200, bbox_inches="tight")
-            print(f"[INFO] Saved GUI trial timeline plot to {out_path}")
-        except Exception as e:
-            print(f"[WARN] Failed to save GUI trial timeline plot: {e}")
 
     def liveFeed(self, event):
         if self.play.GetLabel() == 'Abort':
@@ -2122,16 +1932,6 @@ class MainFrame(wx.Frame):
         else:
             if self.liveTimer.IsRunning():
                 self.liveTimer.Stop()
-            
-                        # New Code: ensure cameras actually stop acquiring before Record can start
-            self.stopAq()                 # New Code
-            time.sleep(0.5)               # New Code (short settle; optional)
-
-            # New Code: reset UI state so the next mode starts cleanly
-            self.play.SetLabel('Live')    # New Code
-            self.rec.Enable(True)         # New Code
-            for h in self.disable4cam:    # New Code
-                h.Enable(True)            # New Code
 
 
             # === NEW: 12-31-2025 stop logging ===
@@ -2160,14 +1960,8 @@ class MainFrame(wx.Frame):
             print(f'💡     Total Stimulation Epochs: {len(self.stim_allowed_trials)}')
             print(f"💧     Total Washout Epochs: {len(self.washout_trials)}")
             print('───────────────────────────────────────────────\n')
-            print(f"[INFO] Saved non-video data to {self.sess_dir}")
+
             self._save_nonvideo_outputs(mode_tag="LIVE")           # New Code 12-30-2025
-             # New Code (insert between the print and logging.shutdown)
-            self.current_mode_tag = "LIVE"
-
-            self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
-            self._save_gui_trial_timeline_png(mode_tag=self.current_mode_tag)  # New Code: saves the GUI timeline PNG
-
 
             # NEW CODE (add immediately after entering else)
             # self.data_logging_enabled = False   # New Code 12-30-2025
@@ -2265,8 +2059,8 @@ class MainFrame(wx.Frame):
                         total_trial_count = self.trial_reset_count + self.reach_number
                         total_trial_count_w_no_pellet = total_trial_count + self.no_pellet_detect_count
                         self.total_trials = total_trial_count                  # New Code
+                        self.trial_outcomes_all.append("no_pellet")            # New Code
                         self.no_pellet_trials_all.append(total_trial_count)    # New Code
-                        # New Code
                         if total_trial_count == 0:
                             perecent_no_pellet = 100
                         else:
@@ -2379,13 +2173,6 @@ class MainFrame(wx.Frame):
                     self.trial_outcomes_all.append("early_reset")                                                  # New Code
                     self.early_reset_trials_all.append(total_trial_count)
 
-                    # New Code
-                    self.trial_delay_ms_all.append(int(getattr(self, "curr_trial_delay_ms", 0)))
-                    # New Code (insert right before _update_trial_timeline_plot)
-                    _epoch_type, _is_stim = self._get_epoch_type_for_current_trial()  # default True
-                    self.trial_is_stim_all.append(bool(_is_stim))                       # New Code
-                    self._update_trial_timeline_plot()
-
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
 
@@ -2478,12 +2265,6 @@ class MainFrame(wx.Frame):
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("success")                                                      # New Code
                     self.tone2_success_trials_all.append(total_trial_count) 
-                    # New Code
-                    self.trial_delay_ms_all.append(int(getattr(self, "curr_trial_delay_ms", 0)))
-                    _epoch_type, _is_stim = self._get_epoch_type_for_current_trial(use_prospective_reach=False)
-                    self.trial_is_stim_all.append(bool(_is_stim))
-
-                    self._update_trial_timeline_plot()
                     perecent_successful_reaches = (self.reach_number / total_trial_count) * 100
                     perecent_failed_reaches = (self.trial_reset_count / total_trial_count) * 100
 
@@ -3068,14 +2849,13 @@ class MainFrame(wx.Frame):
             shutil.copyfile(sysconfigname,os.path.join(self.sess_dir,syscopyname))
             
             
-            # NEW CODE (working behavior)  # New Code
-            for ndx, s in enumerate(self.camStrList):  # New Code
-                camID = str(self.system_cfg[s]['serial'])  # New Code
-                name_base = '%s_%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string, self.system_cfg[s]['nickname'])  # New Code
-                path_base = os.path.join(self.sess_dir, name_base)  # New Code
-                self.camq[camID].put(path_base)  # New Code
-                self.camq_p2read[camID].get()  # New Code  (block until ACK; do NOT reset threads here)
-                        
+            for ndx, s in enumerate(self.camStrList):
+                camID = str(self.system_cfg[s]['serial'])
+                name_base = '%s_%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string, self.system_cfg[s]['nickname'])
+                path_base = os.path.join(self.sess_dir,name_base)
+                self.camq[camID].put(path_base)
+                self.camq_p2read[camID].get()
+            
             if self.com.value >= 0:
                 self.ardq.put('recordPrep')
                 name_base = '%s_%s_%s' % (date_string, self.system_cfg['unitRef'], sess_string)
@@ -3211,9 +2991,7 @@ class MainFrame(wx.Frame):
 
             # New Code (insert between the print and logging.shutdown)
             print(f"[INFO] Saved non-video data to {self.sess_dir}")
-            self._save_behavior_plots(mode_tag='REC')  # New Code: saves 3 PNG plots into sess_dir
-            self._save_gui_trial_timeline_png(mode_tag='REC')  # New Code: saves the GUI timeline PNG
-
+            self._save_behavior_plots(mode_tag=self.current_mode_tag)  # New Code: saves 3 PNG plots into sess_dir
             # =========================
             import logging
 
@@ -3608,10 +3386,6 @@ class MainFrame(wx.Frame):
             pass
         
         self.statusbar.SetStatusText("")
-        try:
-            self._save_gui_trial_timeline_png(mode_tag=getattr(self, "current_mode_tag", "QUIT"))  # New Code
-        except Exception:
-            pass
         self.Destroy()
     
 def show():
