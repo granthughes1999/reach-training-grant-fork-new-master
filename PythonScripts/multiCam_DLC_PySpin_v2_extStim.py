@@ -218,7 +218,17 @@ class multiCam_DLC_Cam(Process):
                             # 1. Before frame acquisition
                             #acquisition_start = time.time() ## <-- GRANT TESTING added lines (1)
 
-                            image_result = cam.GetNextImage()
+                            # Use timeout on GetNextImage to prevent infinite blocking if triggers aren't coming
+                            # For slave cameras waiting on hardware triggers, this prevents deadlock
+                            try:
+                                image_result = cam.GetNextImage(1000)  # 1000ms timeout
+                            except PySpin.SpinnakerException as e:
+                                # Timeout or other error - check if we should stop
+                                if self.aq.value == 0:
+                                    break  # Stop was requested, exit loop
+                                # Otherwise continue trying
+                                print(f"[WARN] Camera {self.camID} GetNextImage timeout/error: {e}")
+                                continue
                             
                             # 2. After frame acquisition
                             #acquisition_end = time.time()  ## <-- GRANT TESTING added lines (2)
