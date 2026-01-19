@@ -89,16 +89,22 @@ class multiCam_DLC_Cam(Process):
                         cam.TriggerSource.SetValue(PySpin.TriggerSource_Software)
                         cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_Off)
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        # Allow hardware trigger output to stabilize before signaling slave cameras
+                        time.sleep(0.5)
+                        print(f"[INIT] Master camera {self.camID} initialized with hardware trigger output on Line1")
                         self.camq_p2read.put('done')
                     if msg == 'InitS':
                         system = PySpin.System.GetInstance()
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
+                        # Brief delay to ensure camera is ready before configuring trigger
+                        time.sleep(0.1)
                         cam.TriggerSource.SetValue(PySpin.TriggerSource_Line3)
                         cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
                         cam.TriggerActivation.SetValue(PySpin.TriggerActivation_AnyEdge)
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        print(f"[INIT] Slave camera {self.camID} initialized with hardware trigger input on Line3")
                         self.camq_p2read.put('done')
                     elif msg == 'Release':
                         if not ser == 0:
@@ -189,11 +195,15 @@ class multiCam_DLC_Cam(Process):
                     elif msg == 'Start':
                         cam.BeginAcquisition()
                         if ismaster:
+                            # Ensure Line1 is configured to output trigger signal before slaves start
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                             cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
                             self.frm.value = 0
-                            self.camq.get()
+                            # Brief delay to ensure Line1 output is stable on BNC before proceeding
+                            time.sleep(0.1)
+                            self.camq.get()  # Wait for 'TrigOff' message
                             cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+                            print(f"[START] Master camera {self.camID} acquisition started, trigger output active on Line1")
                         if benchmark:
                             bA = 0
                             bB = 0
@@ -208,7 +218,17 @@ class multiCam_DLC_Cam(Process):
                             # 1. Before frame acquisition
                             #acquisition_start = time.time() ## <-- GRANT TESTING added lines (1)
 
-                            image_result = cam.GetNextImage()
+                            # Use timeout on GetNextImage to prevent infinite blocking if triggers aren't coming
+                            # For slave cameras waiting on hardware triggers, this prevents deadlock
+                            try:
+                                image_result = cam.GetNextImage(1000)  # 1000ms timeout
+                            except PySpin.SpinnakerException as e:
+                                # Timeout or other error - check if we should stop
+                                if self.aq.value == 0:
+                                    break  # Stop was requested, exit loop
+                                # Otherwise continue trying
+                                print(f"[WARN] Camera {self.camID} GetNextImage timeout/error: {e}")
+                                continue
                             
                             # 2. After frame acquisition
                             #acquisition_end = time.time()  ## <-- GRANT TESTING added lines (2)

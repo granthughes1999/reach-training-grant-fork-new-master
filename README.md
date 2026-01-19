@@ -1,6 +1,9 @@
 # reach-training (8/1)
 Repository to house all required documents to run video acquisition, deeplabcut-enabled network creation, reach finding, and curation.
 
+## Important Update: Camera BNC Sync Cable Fix
+If you were experiencing issues with cameras not connecting when BNC sync cables are plugged in, this has been fixed. See [CAMERA_SYNC_FIX_TESTING.md](CAMERA_SYNC_FIX_TESTING.md) for details and testing instructions.
+
 # General GitHub Commands
 * Run git commands in Windows Powershell prompt
 * Always navigate to repository directory

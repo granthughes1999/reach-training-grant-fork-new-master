@@ -3269,9 +3269,17 @@ class MainFrame(wx.Frame):
                                                self.com, self.stim_status))
             self.cam[ndx].start()
             
+        # Initialize master cameras first
         for m in self.mlist:
             self.camq[m].put('InitM')
             self.camq_p2read[m].get()
+        
+        # Allow hardware trigger signal to stabilize on BNC sync cable before initializing slaves
+        if len(self.slist) > 0:
+            time.sleep(0.5)
+            print(f"[INIT] Master cameras configured, waiting for hardware trigger signal to stabilize...")
+        
+        # Initialize slave cameras after master trigger output is stable
         for s in self.slist:
             self.camq[s].put('InitS')
             self.camq_p2read[s].get()
@@ -3315,7 +3323,8 @@ class MainFrame(wx.Frame):
         record_mode = (self.current_mode_tag == "REC")
         stim_disabled = not self.auto_stim.GetValue()
 
-        for camID in self.mlist + self.slist:
+        # Start master cameras first
+        for camID in self.mlist:
             # Skip stim camera ONLY in Record mode AND stim unchecked
             if (
                 record_mode
@@ -3327,8 +3336,9 @@ class MainFrame(wx.Frame):
                 continue
 
             self.camq[camID].put('Start')
-
-        # Trigger off only for masters that are running
+        
+        # Send TrigOff to master cameras so they start generating software triggers
+        # This MUST happen before slaves start, so slaves can receive triggers immediately
         for m in self.mlist:
             if (
                 record_mode
@@ -3338,6 +3348,25 @@ class MainFrame(wx.Frame):
             ):
                 continue
             self.camq[m].put('TrigOff')
+        
+        # Allow master camera trigger output to stabilize on BNC before starting slave cameras
+        if len(self.slist) > 0:
+            time.sleep(0.3)
+            print(f"[START] Master camera trigger output stabilizing before starting slave cameras...")
+
+        # Start slave cameras after master trigger output is active
+        for camID in self.slist:
+            # Skip stim camera ONLY in Record mode AND stim unchecked
+            if (
+                record_mode
+                and stim_disabled
+                and self.stim_cam_serial is not None
+                and camID == self.stim_cam_serial
+            ):
+                print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
+                continue
+
+            self.camq[camID].put('Start')
 
     # def stopAq(self):
         
