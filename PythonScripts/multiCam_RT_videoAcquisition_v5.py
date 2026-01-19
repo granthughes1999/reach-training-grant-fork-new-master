@@ -3337,6 +3337,18 @@ class MainFrame(wx.Frame):
 
             self.camq[camID].put('Start')
         
+        # Send TrigOff to master cameras so they start generating software triggers
+        # This MUST happen before slaves start, so slaves can receive triggers immediately
+        for m in self.mlist:
+            if (
+                record_mode
+                and stim_disabled
+                and self.stim_cam_serial is not None
+                and m == self.stim_cam_serial
+            ):
+                continue
+            self.camq[m].put('TrigOff')
+        
         # Allow master camera trigger output to stabilize on BNC before starting slave cameras
         if len(self.slist) > 0:
             time.sleep(0.3)
@@ -3355,17 +3367,6 @@ class MainFrame(wx.Frame):
                 continue
 
             self.camq[camID].put('Start')
-
-        # Trigger off only for masters that are running
-        for m in self.mlist:
-            if (
-                record_mode
-                and stim_disabled
-                and self.stim_cam_serial is not None
-                and m == self.stim_cam_serial
-            ):
-                continue
-            self.camq[m].put('TrigOff')
 
     # def stopAq(self):
         
