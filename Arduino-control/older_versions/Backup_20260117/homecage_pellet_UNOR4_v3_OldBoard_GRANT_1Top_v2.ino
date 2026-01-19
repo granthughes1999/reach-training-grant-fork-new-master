@@ -141,7 +141,7 @@ const unsigned long SPOON_DOWN_HOLD_MS   = 200;    // New Code: longer bottom dw
 // New Code
 // New Code: uniform step period control
 const unsigned int STEP_PULSE_HIGH_US   = 8;      // step pulse width
-const unsigned int SCOOP_RETURN_LOW_US  = 12000;  // your uniform return speed (bigger = slower)
+const unsigned int SCOOP_RETURN_LOW_US  = 8000;  // your uniform return speed (bigger = slower)
 const unsigned int SERVO_UPDATE_EVERY_N = 4;      // update servo every N steps (reduces jitter)
 bool BARRIER_RELEASED = false;
 const int spoonUpSafeVal = spoonHomeVal + 700;   // tune: +50 to +300 us, must not collide

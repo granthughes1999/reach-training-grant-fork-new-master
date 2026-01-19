@@ -17,7 +17,23 @@ import time
 from pathlib import Path
 import ruamel.yaml
 import serial
-        
+        # old code
+# (nothing here)
+
+# New Code: 12-15-2025 (add near top, after imports)
+
+# New Code (use exactly this)
+import faulthandler  # New Code
+import os            # New Code
+
+_FAULT_PATH = os.path.join(os.path.dirname(__file__), "faulthandler_dump.txt")  # New Code
+_FAULT_FH = open(_FAULT_PATH, "w")  # New Code: keep as a module-level global
+faulthandler.enable(file=_FAULT_FH, all_threads=True)  # New Code
+faulthandler.dump_traceback_later(5, repeat=True, file=_FAULT_FH)  # New Code
+print(f"[faulthandler] writing to: {_FAULT_PATH}", flush=True)  # New Code
+
+
+# New Code: 12-15-2025
 class multiCam_DLC_Cam(Process):
     def __init__(self, camq, camq_p2read, camID,
                  idList, cpt, aq, frm, array4feed, frmGrab,
@@ -75,6 +91,16 @@ class multiCam_DLC_Cam(Process):
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
+                        # 12-15-2025 : New Code 
+                        # New Code (insert after cam.Init())
+                        nodemap = cam.GetNodeMap()  # New Code
+                        trig = PySpin.CEnumerationPtr(nodemap.GetNode("TriggerMode"))  # New Code
+                        if PySpin.IsAvailable(trig) and PySpin.IsWritable(trig):       # New Code
+                            off = trig.GetEntryByName("Off")                           # New Code
+                            trig.SetIntValue(off.GetValue())                           # New Code
+                        # 12-15-2025 : New Code 
+            
+                        
                         cam.CounterSelector.SetValue(PySpin.CounterSelector_Counter0)
                         cam.CounterEventSource.SetValue(PySpin.CounterEventSource_ExposureStart)
                         cam.CounterEventActivation.SetValue(PySpin.CounterEventActivation_RisingEdge)
@@ -85,20 +111,30 @@ class multiCam_DLC_Cam(Process):
                         cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                         cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
                         cam.LineInverter.SetValue(False)
-                        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
-                        cam.TriggerSource.SetValue(PySpin.TriggerSource_Software)
-                        cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_Off)
-                        cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        # NEW CODE (InitM)
+                        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)                 # New Code
+                        cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_Off)           # New Code
                         self.camq_p2read.put('done')
                     if msg == 'InitS':
                         system = PySpin.System.GetInstance()
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
-                        cam.TriggerSource.SetValue(PySpin.TriggerSource_Line3)
-                        cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
-                        cam.TriggerActivation.SetValue(PySpin.TriggerActivation_AnyEdge)
-                        cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        # 12-15-2025 : New Code 
+                        # New Code (insert after cam.Init())
+                        nodemap = cam.GetNodeMap()  # New Code
+                        trig = PySpin.CEnumerationPtr(nodemap.GetNode("TriggerMode"))  # New Code
+                        if PySpin.IsAvailable(trig) and PySpin.IsWritable(trig):       # New Code
+                            off = trig.GetEntryByName("Off")                           # New Code
+                            trig.SetIntValue(off.GetValue())                           # New Code
+                        # 12-15-2025 : New Code 
+            
+                        # NEW CODE (InitS)
+                        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)                      # New Code
+                        cam.TriggerSource.SetValue(PySpin.TriggerSource_Line1)                # New Code (or Line3 if BNC maps to Line3)
+                        cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)            # New Code
+                        cam.TriggerActivation.SetValue(PySpin.TriggerActivation_RisingEdge)   # New Code
+                        # leave trigger OFF during init                                      # New Cod
                         self.camq_p2read.put('done')
                     elif msg == 'Release':
                         if not ser == 0:
@@ -108,6 +144,8 @@ class multiCam_DLC_Cam(Process):
                                 print("StimSerial CLosed")
                             except Exception as e:
                                 print(e)
+                        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)    # New Code
+                        cam.EndAcquisition()                               # New Code (wrap in try/excep
                         cam.DeInit()
                         del cam
                         for i in self.idList:
@@ -187,7 +225,12 @@ class multiCam_DLC_Cam(Process):
                             record = True
                             self.camq_p2read.put('done')
                     elif msg == 'Start':
-                        cam.BeginAcquisition()
+                        # NEW CODE
+                        if not ismaster:                                                    # New Code
+                            cam.TriggerMode.SetValue(PySpin.TriggerMode_On)                 # New Code
+                        else:                                                               # New Code
+                            cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)                # New Code
+                        cam.BeginAcquisition()                                              # New Code
                         if ismaster:
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                             cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
@@ -270,8 +313,21 @@ class multiCam_DLC_Cam(Process):
                                 pre = time.perf_counter()
                             # print(self.aq.value)
                             
-                        endMsg = self.camq.get()
-                        # print(endMsg)
+                        # old code
+                        #endMsg = self.camq.get()  # old code (blocks forever)
+                        
+                        # 12-15-2025 New Code
+                        try:
+                            endMsg = self.camq.get(timeout=0.25)  # New Code (polling)
+                        except Exception:  # queue.Empty on Windows multiprocessing queues is sometimes not the stdlib Empty
+                            endMsg = None  # New Code
+                        
+                        if self.stop_event.is_set():  # New Code
+                            break  # New Code
+                        
+                        if endMsg is not None:
+                            # handle endMsg as before
+                            pass
                         
                         if record:
                             if not(method == 'roi' and isstim):
@@ -296,16 +352,53 @@ class multiCam_DLC_Cam(Process):
                     
                         
                     elif msg == 'updateSettings':
-                        # New Code: 12-08-2025 ensure camera not acquiring before changing locked nodes
-
                         # ser = 0
                         nodemap = cam.GetNodeMap()
                         binsize = user_cfg[camStr]['bin']
-                        cam.BinningHorizontal.SetValue(int(binsize)) # Uncommented on 12-08-25
-                        cam.BinningVertical.SetValue(int(binsize)) # Uncommented on 12-08-25
-                        ###### 12-08-25
                         
-                
+                        # 12-15-2025 -> Old Code, 2 lines bellow
+                      #  cam.BinningHorizontal.SetValue(int(binsize))
+                      #  cam.BinningVertical.SetValue(int(binsize))
+                      # New code 12-15-2025
+                      # New Code (replace the old binning block)
+                        
+                        def _safe_set_binning(cam, binsize, cam_label="cam"):
+                            b = int(binsize)  # New Code
+                            if b < 1:
+                                b = 1  # New Code
+                        
+                            # If you are already acquiring, binning nodes will commonly be locked.
+                            # Stop acquisition if needed.
+                            try:
+                                if cam.IsStreaming():        # New Code
+                                    cam.EndAcquisition()     # New Code
+                            except Exception:
+                                pass  # New Code
+                        
+                            # Horizontal
+                            try:
+                                bh = cam.BinningHorizontal  # New Code
+                                if PySpin.IsAvailable(bh) and PySpin.IsWritable(bh):  # New Code
+                                    bh.SetValue(b)  # New Code
+                                else:
+                                    print(f"[{cam_label}] BinningHorizontal not writable -> skipping", flush=True)  # New Code
+                            except Exception as e:
+                                print(f"[{cam_label}] BinningHorizontal set failed -> {e}", flush=True)  # New Code
+                        
+                            # Vertical
+                            try:
+                                bv = cam.BinningVertical  # New Code
+                                if PySpin.IsAvailable(bv) and PySpin.IsWritable(bv):  # New Code
+                                    bv.SetValue(b)  # New Code
+                                else:
+                                    print(f"[{cam_label}] BinningVertical not writable -> skipping", flush=True)  # New Code
+                            except Exception as e:
+                                print(f"[{cam_label}] BinningVertical set failed -> {e}", flush=True)  # New Code
+                        
+                        _safe_set_binning(cam, binsize, cam_label="cam1")  # New Code
+                      # New code 12-15-2025
+
+                        
                         # cam.IspEnable.SetValue(False)
                         node_acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
                         if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
@@ -390,7 +483,7 @@ class multiCam_DLC_Cam(Process):
                                 stimThresh = int(user_cfg['stimulusThreshold'])
                                 record_frame_rate = int(record_frame_rate*user_cfg['stimRateX'])
                                 try:
-                                    ser = serial.Serial('COM3', write_timeout = 0.001)
+                                    ser = serial.Serial('COM5', write_timeout = 0.001)
                                     print("-------Stim Serial Connected--------")                                    
                                 except Exception as e:
                                     print('No Stim serial')
