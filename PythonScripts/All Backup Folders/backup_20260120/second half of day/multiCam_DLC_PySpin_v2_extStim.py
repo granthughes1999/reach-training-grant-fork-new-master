@@ -21,7 +21,7 @@ import serial
 class multiCam_DLC_Cam(Process):
     def __init__(self, camq, camq_p2read, camID,
                  idList, cpt, aq, frm, array4feed, frmGrab,
-                 com, stim_status,stim_always_armed):
+                 com, stim_status):
         super().__init__()
         self.threshold_cross_frames = []  # GRANT Initialize an empty list for threshold-crossing frames
         self.camID = camID
@@ -35,7 +35,6 @@ class multiCam_DLC_Cam(Process):
         self.frmGrab = frmGrab
         self.com = com
         self.stim_status = stim_status
-        self.stim_always_armed = stim_always_armed
         # New code 9-29-2025
         self.stim_npy_path = None  # New Code
         
@@ -61,7 +60,6 @@ class multiCam_DLC_Cam(Process):
         frame = np.zeros([aqH,aqW],'ubyte')
         method = 'none'
         ser = 0
-        ser_always = 0
         isstim = False
         if user_cfg['stimAxes'] == camStr:
             isstim = True
@@ -108,13 +106,6 @@ class multiCam_DLC_Cam(Process):
                                 ser.close()
                                 print(ser)
                                 print("StimSerial CLosed")
-                            except Exception as e:
-                                print(e)
-                        if not ser_always == 0:
-                            try:
-                                ser_always.close()
-                                print(ser_always)
-                                print("StimAlwaysSerial Closed")
                             except Exception as e:
                                 print(e)
                         cam.DeInit()
@@ -242,28 +233,25 @@ class multiCam_DLC_Cam(Process):
                                             # self.threshold_cross_frames.append(self.frm.value)  #  GRATN ADDED Track the current frame number
                                  
                                                 
-                                           # print('/n')
-                                            #print(f"StimROI Threshold crossed at frame: {self.frm.value}") ## GRANT ADDED
-                                            self.threshold_cross_frames.append(int(self.frm.value))              # 9-29-2025, New Code
+                                            if self.stim_status.value == 1:
+                                                print('/n')
+                                                print(f"StimROI Threshold crossed at frame: {self.frm.value}") ## GRANT ADDED
+                                                self.threshold_cross_frames.append(int(self.frm.value))              # 9-29-2025, New Code
 
-                                            try:
-
-                                                if self.stim_always_armed.value == 1 and not ser_always == 0:
-                                                    always_msg = user_cfg.get("stimAlwaysSerialMsg", "S")
-                                                    ser_always.write(always_msg.encode())
-                                                    self.stim_always_armed.value = 0
-
-
-                                                if self.stim_status.value == 1 and not ser == 0:
-                                                    msg = 'x'
-                                                    ser.write(msg.encode())
-                                                    print("StimSent")
-                                                    print('/n')
-                                                    self.stim_status.value = 2
-
-                                            except Exception as e:
-                                                print(e)
-                                            np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code 
+                                                try:
+    
+                                                    if not ser == 0:
+                                                        msg = 'x'
+                                                        ser.write(msg.encode())
+                                                        np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code # 9-29-2025 New Code
+                                                        print("StimSent")
+                                                        print('/n')
+                                       
+                                                except Exception as e:
+                                                    print(e)
+                                                self.stim_status.value = 2
+                                                    #print(f"Threshold crossed at frame (02): {self.frm.value}") ## GRANT ADDED
+                                        f.write("%s\n" % round(capture_duration))
                             
                             
                             if self.aq.value == 1:
@@ -402,24 +390,12 @@ class multiCam_DLC_Cam(Process):
                                 stimThresh = int(user_cfg['stimulusThreshold'])
                                 record_frame_rate = int(record_frame_rate*user_cfg['stimRateX'])
                                 try:
-                                    stim_serial_port = user_cfg.get("stimSerialPort", "COM3")
-                                    stim_serial_baud = int(user_cfg.get("stimSerialBaud", 9600))
-                                    ser = serial.Serial(stim_serial_port, write_timeout=0.001)
-                                    print("-------Stim Serial Connected--------")
+                                    ser = serial.Serial('COM3', write_timeout = 0.001)
+                                    print("-------Stim Serial Connected--------")                                    
                                 except Exception as e:
                                     print('No Stim serial')
                                     print(e)
-                                 
-                                try:
-                                    stim_always_serial_port = user_cfg.get("stimAlwaysSerialPort", "COM5")
-                                    stim_always_serial_baud = int(user_cfg.get("stimAlwaysSerialBaud", 115200))
-                                    ser_always = serial.Serial(stim_always_serial_port, write_timeout=0.001)
-                                    print("-------Stim Always Serial Connected--------")
-                                except Exception as e:
-                                    print('No Stim-always serial')
-                                    print(e)
                                         
-       
                             nodemap = cam.GetNodeMap()
                             
                             # Set width

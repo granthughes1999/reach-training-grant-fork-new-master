@@ -875,7 +875,6 @@ class MainFrame(wx.Frame):
         self.camIDlsit = list()
         self.dlc = Value(ctypes.c_byte, 0)
         self.stim_status = Value(ctypes.c_byte, 0)
-        self.stim_always_armed = Value(ctypes.c_byte, 0)
         self.camaq = Value(ctypes.c_byte, 0)
         self.frmaq = Value(ctypes.c_int, 0)
         self.com = Value(ctypes.c_int, -1)
@@ -2433,7 +2432,7 @@ class MainFrame(wx.Frame):
                     self.reach_number += 1
                     self._update_session_counters_ui()  # New Code 01-15-2026
                     self._stim_armed = True   # New Code
-                    self.stim_always_armed.value = 1  # New Code                    
+                    
         
                     block_size = int(self.block_size_ctrl.GetValue()) if hasattr(self, 'block_size_ctrl') else int(self.user_cfg.get('blockSize', 20))  # New Code
                     self.block_size_logging = block_size
@@ -3267,7 +3266,7 @@ class MainFrame(wx.Frame):
                                                camID, self.camIDlsit,
                                                self.frmDims, self.camaq,
                                                self.frmaq, self.array4feed[ndx], self.frmGrab[ndx],
-                                               self.com, self.stim_status, self.stim_always_armed))
+                                               self.com, self.stim_status))
             self.cam[ndx].start()
             
         for m in self.mlist:
