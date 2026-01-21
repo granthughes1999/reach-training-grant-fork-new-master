@@ -876,6 +876,7 @@ class MainFrame(wx.Frame):
         self.dlc = Value(ctypes.c_byte, 0)
         self.stim_status = Value(ctypes.c_byte, 0)
         self.stim_always_armed = Value(ctypes.c_byte, 0)
+        self.stim_always_fired_frame = Value(ctypes.c_int, -1)  # New Code: frame when stimAlwaysSerialMsg fires
         self.camaq = Value(ctypes.c_byte, 0)
         self.frmaq = Value(ctypes.c_int, 0)
         self.com = Value(ctypes.c_int, -1)
@@ -2374,7 +2375,7 @@ class MainFrame(wx.Frame):
                     self._update_session_counters_ui()  # New Code
 
 
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("early_reset")                                                  # New Code
@@ -2474,7 +2475,7 @@ class MainFrame(wx.Frame):
                     if self.data_logging_enabled:
                         self.trial_delays.append(self.curr_trial_delay_ms)
                           
-                    total_trial_count = self.trial_reset_count + self.reach_number 
+                    total_trial_count = self.trial_reset_count + self.reach_number
                     # New Code
                     self.total_trials = total_trial_count                                                         # New Code
                     self.trial_outcomes_all.append("success")                                                      # New Code
@@ -3263,11 +3264,13 @@ class MainFrame(wx.Frame):
         for ndx, camID in enumerate(self.camIDlsit):
             self.camq[camID] = Queue()
             self.camq_p2read[camID] = Queue()
+            # NEW CODE
             self.cam.append(spin.multiCam_DLC_Cam(self.camq[camID], self.camq_p2read[camID],
-                                               camID, self.camIDlsit,
-                                               self.frmDims, self.camaq,
-                                               self.frmaq, self.array4feed[ndx], self.frmGrab[ndx],
-                                               self.com, self.stim_status, self.stim_always_armed))
+                                            camID, self.camIDlsit,
+                                            self.frmDims, self.camaq,
+                                            self.frmaq, self.array4feed[ndx], self.frmGrab[ndx],
+                                            self.com, self.stim_status, self.stim_always_armed,
+                                            self.stim_always_fired_frame))  # New Code
             self.cam[ndx].start()
             
         for m in self.mlist:
@@ -3277,10 +3280,12 @@ class MainFrame(wx.Frame):
             self.camq[s].put('InitS')
             self.camq_p2read[s].get()
         
-        self.ardq = Queue()
-        self.ardq_p2read = Queue()
+        self.ardq = Queue()                 # NEW CODE
+        self.ardq_p2read = Queue()          # NEW CODE
         self.ard = arduino.arduinoCtrl(self.ardq, self.ardq_p2read, self.frmaq, self.com,
-                                       self.is_busy, self.mVal, self.stim_status, self.stim_selection, self.del_style)
+                                    self.is_busy, self.mVal, self.stim_status,
+                                    self.stim_always_fired_frame,  # New Code
+                                    self.stim_selection, self.del_style)
         self.ard.start()
         self.ardq_p2read.get()
         

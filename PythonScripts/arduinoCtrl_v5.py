@@ -14,7 +14,9 @@ import serial
 # import pickle
         
 class arduinoCtrl(Process):
-    def __init__(self, ardq, ardq_p2read, frm, com, is_busy, mVal, stim_status, stim_selection, del_style):
+    def __init__(self, ardq, ardq_p2read, frm, com, is_busy, mVal, stim_status,
+             stim_always_fired_frame,  # New Code
+             stim_selection, del_style):
         super().__init__()
         self.ardq = ardq
         self.ardq_p2read = ardq_p2read
@@ -24,6 +26,7 @@ class arduinoCtrl(Process):
         self.mVal = mVal
         self.stim_status = stim_status
         self.stim_selection = stim_selection
+        self.stim_always_fired_frame = stim_always_fired_frame  # New Code
         self.del_style = del_style
         self.pellet_arrived = 0
         self.show_extra_prints = False  # New Code GRANT 12-29-25,
@@ -68,10 +71,19 @@ class arduinoCtrl(Process):
             
         self.ardq_p2read.put('done')
         self.record = False 
+        self._last_stim_always_frame = -1  # New Code: dedupe
+
         while True:
             if not serSuccess:
                 self.com.value = -1
                 continue
+            # NEW CODE: log stimAlwaysSerialMsg event with frame number
+            if self.record:
+                fired_frame = int(self.stim_always_fired_frame.value)
+                if fired_frame != -1 and fired_frame != self._last_stim_always_frame:
+                    self.events.write("Reach_Init:\t%s\n\r" % fired_frame)
+                    self._last_stim_always_frame = fired_frame
+                    self.stim_always_fired_frame.value = -1  # reset after logging            
             try:
                 if self.is_busy.value == 0:
                     if self.stim_status.value == 2:

@@ -21,7 +21,7 @@ import serial
 class multiCam_DLC_Cam(Process):
     def __init__(self, camq, camq_p2read, camID,
                  idList, cpt, aq, frm, array4feed, frmGrab,
-                 com, stim_status,stim_always_armed, stim_always_fired_frame):
+                 com, stim_status,stim_always_armed):
         super().__init__()
         self.threshold_cross_frames = []  # GRANT Initialize an empty list for threshold-crossing frames
         self.camID = camID
@@ -36,8 +36,6 @@ class multiCam_DLC_Cam(Process):
         self.com = com
         self.stim_status = stim_status
         self.stim_always_armed = stim_always_armed
-        self.stim_always_fired_frame = stim_always_fired_frame  # New Code
-
         # New code 9-29-2025
         self.stim_npy_path = None  # New Code
         
@@ -225,32 +223,33 @@ class multiCam_DLC_Cam(Process):
                             #acquisition_end = time.time()  ## <-- GRANT TESTING added lines (2)
                             #print(f"Frame acquisition time: {acquisition_end - acquisition_start:.6f} seconds")  ## <-- GRANT TESTING added lines (3)
                             ## TEST 1, end
+
                             if record:
-                                current_stimROI_thr = np.mean(np.sum(frame,axis=0)[:5])
-                                #print(f'current_stimROI_thr: {current_stimROI_thr}')
                                 if start_time == 0:
                                     start_time = image_result.GetTimeStamp()
                                 else:
                                     capture_duration = image_result.GetTimeStamp() - start_time
                                     start_time = image_result.GetTimeStamp()
                                     # capture_duration = capture_duration/1000/1000
-                                    if not(method == 'roi' and isstim):
+                                    if not (method == 'roi' and isstim):
                                         avi.Append(image_result)
-                                    elif (method == 'roi' and isstim):
-                                        frame[:,:] = image_result.GetNDArray()
-                                        show_thr_cross = True
-                                        if np.mean(np.sum(frame,axis=0)[:5]) > stimThresh: # GRANT HUGHES --> CHANGE THIS VALUE TO SET THE STIMULUS THRESHOL
-                                            self.threshold_cross_frames.append(int(self.frm.value))              # 9-29-2025, New Code
+                                    else:
+                                        frame[:, :] = image_result.GetNDArray()
+                                        stim_val = np.mean(np.sum(frame, axis=0)[:5])
+                                        if stim_val > stimThresh:  # GRANT HUGHES --> CHANGE THIS VALUE TO SET THE STIMULUS THRESHOLD
+                                            print('/n')
+                                            print(f"StimROI Threshold crossed at frame: {self.frm.value}")  # GRANT ADDED
+                                            self.threshold_cross_frames.append(int(self.frm.value))  # 9-29-2025, New Code
 
                                             try:
-
                                                 if self.stim_always_armed.value == 1 and not ser_always == 0:
                                                     always_msg = user_cfg.get("stimAlwaysSerialMsg", "S")
                                                     ser_always.write(always_msg.encode())
-                                                    self.stim_always_fired_frame.value = int(self.frm.value)  # New Code: capture trigger frame
-
+                                                    if self.events_path:
+                                                        with open(self.events_path, "a") as events_file:
+                                                            events_file.write("reach_init\t%s\n\r" % self.frm.value)
+                                                            events_file.write("reach_roi\t%s\n\r" % self.frm.value)
                                                     self.stim_always_armed.value = 0
-
 
                                                 if self.stim_status.value == 1 and not ser == 0:
                                                     msg = 'x'
@@ -258,11 +257,10 @@ class multiCam_DLC_Cam(Process):
                                                     print("StimSent")
                                                     print('/n')
                                                     self.stim_status.value = 2
-
                                             except Exception as e:
                                                 print(e)
-                                            np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code 
-
+                                            np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code # 9-29-2025 New Code
+                                        f.write("%s\n" % round(capture_duration))
                                                             
                             
                             if self.aq.value == 1:
