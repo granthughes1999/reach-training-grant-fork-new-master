@@ -11,9 +11,9 @@ Created on Sat Oct  4 08:37:43 2025
 import time
 import serial
  
-def optotagging_protocol(port="COM5", interval=2, duration=120):
+def optotagging_protocol(port="COM4", interval=2, duration=120):
     try:
-        ser = serial.Serial('COM5', write_timeout = 0.001)
+        ser = serial.Serial(port, write_timeout = 0.001)
         print("-------Stim Serial Connected--------")                                    
     except Exception as e:
         print('No Stim serial')
@@ -35,6 +35,6 @@ def optotagging_protocol(port="COM5", interval=2, duration=120):
     print("Optotagging complete.")
 
 if __name__ == "__main__":
-    optotagging_protocol(port="COM5", interval=2, duration=120)
+    optotagging_protocol(port="COM3", interval=2, duration=120)
 
 

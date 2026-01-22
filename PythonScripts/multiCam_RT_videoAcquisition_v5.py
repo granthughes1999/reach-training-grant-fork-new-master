@@ -1202,10 +1202,11 @@ class MainFrame(wx.Frame):
             int(getattr(self, "trial_reset_count", 0))
         )
         # New Code
-        total_epoch = (
-            int(getattr(self, "reach_number", 0))
-        )
-        epoch_label = self._compute_epoch_label(total_epoch)
+        # NEW CODE
+        completed_trials = int(getattr(self, "reach_number", 0))
+        prospective_trial = completed_trials + 1  # <-- THIS IS THE FIX
+        epoch_label = self._compute_epoch_label(prospective_trial)
+
         self.epoch_progress_label = epoch_label
 
         if total > 0:

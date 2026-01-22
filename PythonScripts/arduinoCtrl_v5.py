@@ -210,8 +210,10 @@ class arduinoCtrl(Process):
                 elif comVal == 16:
                     msg = 'Sx'
                     stim_flag = True  # New Code
-                    
-                stim_frame = self.frm.value  # GRANT, 9-17-2025 , capture frame immediately
+                # Use stim-trigger frame if it exists; otherwise fallback to current frame
+                stim_frame = int(self.stim_always_fired_frame.value)  # NEW CODE
+                if stim_frame == -1:                                  # NEW CODE
+                    stim_frame = int(self.frm.value)                  # NEW CODE    
                 self.ser.write(msg.encode())
                 while True:
                     try:
@@ -234,16 +236,13 @@ class arduinoCtrl(Process):
                             if len(event):
                                #print(f'recorded value for {event}: {self.frm.value}') # New Code GRANT 12-29-25,
                                 print('')  # New Code GRANT 12-29-25,
-
-
-                            if self.record and stim_flag:                               # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                                self.events.write("stim_sent\t%s\n\r" % (stim_frame))  # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                               # print(f'recorded value for stim_sent: {stim_frame}')   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                       
+                            # NEW CODE
+                            if self.record and stim_flag:
+                                self.events.write("stim_sent\t%s\n\r" % (stim_frame))
+                                self.stim_always_fired_frame.value = -1  # NEW CODE: consume trigger frame after logging
 
                                 #print('%s in %d attempt(s)' % (line,attmpt))   # New Code GRANT 9-15-25, replaced self.frm.value with stim_frame
-                
-        
+                        
                             self.is_busy.value = 1;
                             self.com.value = 0
                             return
