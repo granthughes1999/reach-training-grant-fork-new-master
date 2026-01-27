@@ -127,7 +127,7 @@ class multiCam_DLC_Cam(Process):
                                 print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
                                 try:
                                     cam.EndAcquisition()
-                                except:
+                                except Exception:
                                     pass
                             
                             cam.DeInit()
@@ -309,7 +309,7 @@ class multiCam_DLC_Cam(Process):
                             # Explicitly release image buffer to prevent memory/buffer issues
                             try:
                                 image_result.Release()
-                            except PySpin.SpinnakerException as ex:
+                            except PySpin.SpinnakerException:
                                 # Buffer may already be released, continue anyway
                                 pass
                             
