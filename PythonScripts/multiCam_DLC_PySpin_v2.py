@@ -105,7 +105,7 @@ class multiCam_DLC_Cam(Process):
                         cam.Init()
                         
                         # Configure buffer handling mode during initialization
-                        # This prevents buffer overflow issues during live acquisition  
+                        # This prevents buffer overflow issues during live acquisition
                         s_node_map = cam.GetTLStreamNodeMap()
                         handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
                         if PySpin.IsAvailable(handling_mode) and PySpin.IsWritable(handling_mode):
@@ -127,7 +127,7 @@ class multiCam_DLC_Cam(Process):
                                 print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
                                 try:
                                     cam.EndAcquisition()
-                                except Exception:
+                                except PySpin.SpinnakerException:
                                     pass
                             
                             cam.DeInit()
