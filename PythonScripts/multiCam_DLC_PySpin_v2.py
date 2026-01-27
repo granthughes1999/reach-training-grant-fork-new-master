@@ -72,6 +72,17 @@ class multiCam_DLC_Cam(Process):
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
+                        
+                        # Configure buffer handling mode during initialization
+                        # This prevents buffer overflow issues during live acquisition
+                        s_node_map = cam.GetTLStreamNodeMap()
+                        handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
+                        if PySpin.IsAvailable(handling_mode) and PySpin.IsWritable(handling_mode):
+                            handling_mode_entry = handling_mode.GetEntryByName('NewestOnly')
+                            if handling_mode_entry is not None and PySpin.IsAvailable(handling_mode_entry):
+                                handling_mode.SetIntValue(handling_mode_entry.GetValue())
+                                print(f'Camera {self.camID}: Buffer handling set to NewestOnly for live acquisition')
+                        
                         cam.CounterSelector.SetValue(PySpin.CounterSelector_Counter0)
                         cam.CounterEventSource.SetValue(PySpin.CounterEventSource_ExposureStart)
                         cam.CounterEventActivation.SetValue(PySpin.CounterEventActivation_RisingEdge)
@@ -92,16 +103,48 @@ class multiCam_DLC_Cam(Process):
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
+                        
+                        # Configure buffer handling mode during initialization
+                        # This prevents buffer overflow issues during live acquisition  
+                        s_node_map = cam.GetTLStreamNodeMap()
+                        handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
+                        if PySpin.IsAvailable(handling_mode) and PySpin.IsWritable(handling_mode):
+                            handling_mode_entry = handling_mode.GetEntryByName('NewestOnly')
+                            if handling_mode_entry is not None and PySpin.IsAvailable(handling_mode_entry):
+                                handling_mode.SetIntValue(handling_mode_entry.GetValue())
+                                print(f'Camera {self.camID}: Buffer handling set to NewestOnly for live acquisition')
+                        
                         cam.TriggerSource.SetValue(PySpin.TriggerSource_Line3)
                         cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
                         cam.TriggerActivation.SetValue(PySpin.TriggerActivation_AnyEdge)
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
                         self.camq_p2read.put('done')
                     elif msg == 'Release':
-                        cam.DeInit()
-                        del cam
-                        for i in self.idList:
-                            cam_list.RemoveBySerial(str(i))
+                        # Improved camera cleanup sequence
+                        try:
+                            # Ensure camera is not acquiring before deinit
+                            if cam.IsStreaming():
+                                print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
+                                try:
+                                    cam.EndAcquisition()
+                                except:
+                                    pass
+                            
+                            cam.DeInit()
+                            print(f'Camera {self.camID}: Deinitialized successfully')
+                        except PySpin.SpinnakerException as ex:
+                            print(f'Camera {self.camID}: Error during deinit: {ex}')
+                        except Exception as e:
+                            print(f'Camera {self.camID}: Unexpected error during cleanup: {e}')
+                        
+                        # Remove from camera list and cleanup
+                        try:
+                            for i in self.idList:
+                                cam_list.RemoveBySerial(str(i))
+                            del cam
+                        except Exception as e:
+                            print(f'Camera cleanup error: {e}')
+                        
                         # system.ReleaseInstance() # Release instance
                         self.camq_p2read.put('done')
                     elif msg == 'recordPrep':
@@ -168,7 +211,13 @@ class multiCam_DLC_Cam(Process):
                             record = True
                             self.camq_p2read.put('done')
                     elif msg == 'Start':
-                        cam.BeginAcquisition()
+                        try:
+                            cam.BeginAcquisition()
+                        except PySpin.SpinnakerException as ex:
+                            print(f'Failed to begin acquisition for camera {self.camID}: {ex}')
+                            self.camq_p2read.put('done')
+                            continue
+                            
                         if ismaster:
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                             cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
@@ -180,8 +229,50 @@ class multiCam_DLC_Cam(Process):
                             bB = 0
                             pre = time.perf_counter()
                         
+                        # Track consecutive timeout errors for sync loss detection
+                        consecutive_timeouts = 0
+                        max_consecutive_timeouts = 5
+                        
                         while self.aq.value > 0:
-                            image_result = cam.GetNextImage()
+                            
+                            # Add timeout and error handling to GetNextImage
+                            try:
+                                # Timeout of 1000ms - prevents indefinite blocking on sync loss
+                                image_result = cam.GetNextImage(1000)
+                                
+                                # Validate image result
+                                if image_result.IsIncomplete():
+                                    print(f'Camera {self.camID}: Incomplete image received. Status: {image_result.GetImageStatus()}')
+                                    image_result.Release()
+                                    consecutive_timeouts += 1
+                                    if consecutive_timeouts >= max_consecutive_timeouts:
+                                        print(f'Camera {self.camID}: Too many incomplete frames. Possible sync loss.')
+                                        consecutive_timeouts = 0
+                                    continue
+                                    
+                                # Reset timeout counter on successful frame
+                                consecutive_timeouts = 0
+                                
+                            except PySpin.SpinnakerException as ex:
+                                consecutive_timeouts += 1
+                                error_msg = str(ex)
+                                
+                                # Check for specific timeout/sync errors
+                                if 'Timeout' in error_msg or '-1011' in error_msg or 'EventData' in error_msg:
+                                    print(f'Camera {self.camID}: Frame acquisition timeout ({consecutive_timeouts}/{max_consecutive_timeouts}). Possible sync issue.')
+                                    
+                                    if consecutive_timeouts >= max_consecutive_timeouts:
+                                        print(f'Camera {self.camID}: CRITICAL - Persistent sync loss detected. Stopping acquisition.')
+                                        # Signal main thread about sync loss
+                                        self.aq.value = 0
+                                        break
+                                else:
+                                    print(f'Camera {self.camID}: Acquisition error: {ex}')
+                                
+                                # Continue to next iteration on error
+                                time.sleep(0.001)  # Brief pause to avoid tight error loop
+                                continue
+                            
                             if record:
                                 if start_time == 0:
                                     start_time = image_result.GetTimeStamp()
@@ -215,6 +306,13 @@ class multiCam_DLC_Cam(Process):
                                 bB+=time.perf_counter()-pre
                                 pre = time.perf_counter()
                             
+                            # Explicitly release image buffer to prevent memory/buffer issues
+                            try:
+                                image_result.Release()
+                            except PySpin.SpinnakerException as ex:
+                                # Buffer may already be released, continue anyway
+                                pass
+                            
                         self.camq.get()
                         
                         if record:
@@ -226,8 +324,14 @@ class multiCam_DLC_Cam(Process):
                                 was = round(bB/bA*1000*1000)
                                 tried = round(1/record_frame_rate*1000*1000)
                                 print(user_cfg[camStr]['nickname'] + ' actual: ' + str(was) + ' - target: ' + str(tried))
-                                
-                        cam.EndAcquisition()
+                        
+                        # End acquisition with error handling
+                        try:
+                            cam.EndAcquisition()
+                        except PySpin.SpinnakerException as ex:
+                            print(f'Camera {self.camID}: Error ending acquisition: {ex}')
+                            # Continue with cleanup anyway
+                            
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
                         self.frmGrab.value = 0
                         if ismaster:
