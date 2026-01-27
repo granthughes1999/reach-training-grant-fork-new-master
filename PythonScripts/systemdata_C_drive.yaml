@@ -23,6 +23,18 @@ cam2:
   framerate: 150
   bin: 4
   nickname: frontCam
+cam3:
+  serial: 24152518
+  ismaster: false
+  crop:
+  - 42
+  - 300
+  - 49
+  - 200
+  exposure: 100
+  framerate: 150
+  bin: 4
+  nickname: stimCam
 
 
 # User information
@@ -32,16 +44,29 @@ interim_data_dir: C:\RawDataLocal
 compressed_data_dir: C:\compressedData
 final_data_dir: Z:\PHYS\ChristieLab\Lab Management\Grant\reachingData\compressed_data
 COM: 4
+stimSerialPort: COM3
+stimSerialBaud: 9600
+stimAlwaysSerialPort: COM5
+stimAlwaysSerialBaud: 115200
+stimAlwaysSerialMsg: S
+# Stim ROI
+stimAxes: cam3
+stimXWYH:
+- 195
+- 18
+- 161
+- 40
+stimRateX: 4
 
 # Pellet and ROI
 axesRef: cam1
 pelletXY:
 - 249
-- 153
+- 152
 roiXWYH:
-- 207
+- 211
 - 12
-- 128
+- 127
 - 88
 shiftFactor: 8
 

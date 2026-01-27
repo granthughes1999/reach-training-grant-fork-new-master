@@ -21,9 +21,8 @@ import serial
 class multiCam_DLC_Cam(Process):
     def __init__(self, camq, camq_p2read, camID,
                  idList, cpt, aq, frm, array4feed, frmGrab,
-                 com, stim_status,stim_always_armed, stim_always_fired_frame):
+                 com, stim_status):
         super().__init__()
-        self.threshold_cross_frames = []  # GRANT Initialize an empty list for threshold-crossing frames
         self.camID = camID
         self.camq = camq
         self.camq_p2read = camq_p2read
@@ -35,11 +34,6 @@ class multiCam_DLC_Cam(Process):
         self.frmGrab = frmGrab
         self.com = com
         self.stim_status = stim_status
-        self.stim_always_armed = stim_always_armed
-        self.stim_always_fired_frame = stim_always_fired_frame  # New Code
-
-        # New code 9-29-2025
-        self.stim_npy_path = None  # New Code
         
     def run(self):
         benchmark = False
@@ -62,8 +56,7 @@ class multiCam_DLC_Cam(Process):
         aqH = self.cpt[1]
         frame = np.zeros([aqH,aqW],'ubyte')
         method = 'none'
-        ser = 0
-        ser_always = 0
+        stimThresh = 0
         isstim = False
         if user_cfg['stimAxes'] == camStr:
             isstim = True
@@ -71,7 +64,7 @@ class multiCam_DLC_Cam(Process):
         while True:
             try:
                 msg = self.camq.get(block=False)
-                # print(f'Message from vid Aq: {msg}')
+#                print(msg)
                 try:
                     if msg == 'InitM':
                         ismaster = True
@@ -79,17 +72,6 @@ class multiCam_DLC_Cam(Process):
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
-                        
-                        # Configure buffer handling mode during initialization
-                        # This prevents buffer overflow issues during live acquisition
-                        s_node_map = cam.GetTLStreamNodeMap()
-                        handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
-                        if PySpin.IsAvailable(handling_mode) and PySpin.IsWritable(handling_mode):
-                            handling_mode_entry = handling_mode.GetEntryByName('NewestOnly')
-                            if handling_mode_entry is not None and PySpin.IsAvailable(handling_mode_entry):
-                                handling_mode.SetIntValue(handling_mode_entry.GetValue())
-                                print(f'Camera {self.camID}: Buffer handling set to NewestOnly for live acquisition')
-                        
                         cam.CounterSelector.SetValue(PySpin.CounterSelector_Counter0)
                         cam.CounterEventSource.SetValue(PySpin.CounterEventSource_ExposureStart)
                         cam.CounterEventActivation.SetValue(PySpin.CounterEventActivation_RisingEdge)
@@ -110,63 +92,16 @@ class multiCam_DLC_Cam(Process):
                         cam_list = system.GetCameras()
                         cam = cam_list.GetBySerial(self.camID)
                         cam.Init()
-                        
-                        # Configure buffer handling mode during initialization
-                        # This prevents buffer overflow issues during live acquisition
-                        s_node_map = cam.GetTLStreamNodeMap()
-                        handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
-                        if PySpin.IsAvailable(handling_mode) and PySpin.IsWritable(handling_mode):
-                            handling_mode_entry = handling_mode.GetEntryByName('NewestOnly')
-                            if handling_mode_entry is not None and PySpin.IsAvailable(handling_mode_entry):
-                                handling_mode.SetIntValue(handling_mode_entry.GetValue())
-                                print(f'Camera {self.camID}: Buffer handling set to NewestOnly for live acquisition')
-                        
                         cam.TriggerSource.SetValue(PySpin.TriggerSource_Line3)
                         cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
                         cam.TriggerActivation.SetValue(PySpin.TriggerActivation_AnyEdge)
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
                         self.camq_p2read.put('done')
                     elif msg == 'Release':
-                        if not ser == 0:
-                            try:
-                                ser.close()
-                                print(ser)
-                                print("StimSerial CLosed")
-                            except Exception as e:
-                                print(e)
-                        if not ser_always == 0:
-                            try:
-                                ser_always.close()
-                                print(ser_always)
-                                print("StimAlwaysSerial Closed")
-                            except Exception as e:
-                                print(e)
-                        
-                        # Improved camera cleanup sequence
-                        try:
-                            # Ensure camera is not acquiring before deinit
-                            if cam.IsStreaming():
-                                print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
-                                try:
-                                    cam.EndAcquisition()
-                                except:
-                                    pass
-                            
-                            cam.DeInit()
-                            print(f'Camera {self.camID}: Deinitialized successfully')
-                        except PySpin.SpinnakerException as ex:
-                            print(f'Camera {self.camID}: Error during deinit: {ex}')
-                        except Exception as e:
-                            print(f'Camera {self.camID}: Unexpected error during cleanup: {e}')
-                        
-                        # Remove from camera list and cleanup
-                        try:
-                            for i in self.idList:
-                                cam_list.RemoveBySerial(str(i))
-                            del cam
-                        except Exception as e:
-                            print(f'Camera cleanup error: {e}')
-                        
+                        cam.DeInit()
+                        del cam
+                        for i in self.idList:
+                            cam_list.RemoveBySerial(str(i))
                         # system.ReleaseInstance() # Release instance
                         self.camq_p2read.put('done')
                     elif msg == 'recordPrep':
@@ -227,28 +162,13 @@ class multiCam_DLC_Cam(Process):
                                 print(path_base)
                                 avi.Open(path_base, option)
                                 
-                            # 9-29-2025 New Code
-                            f = open('%s_timestamps.txt' % path_base, 'w')  # New Code
-                            self.stim_npy_path = f"{path_base}_stim_frames.npy"            # New Code
-                            self.threshold_cross_frames = []                                # New Code
-                            np.save(self.stim_npy_path, np.empty(0, dtype=np.int32))        # New Code
-                            
-                            # 9-29-2025 New Code
-                            self.stim_npy_path = f"{path_base}_stim_frames.npy"   # New Code
-                            np.save(self.stim_npy_path, np.empty(0, dtype=np.int32))  # New Code: init empty file
-                            
+                            f = open('%s_timestamps.txt' % path_base, 'w')
                             start_time = 0
                             capture_duration = 0
                             record = True
                             self.camq_p2read.put('done')
                     elif msg == 'Start':
-                        try:
-                            cam.BeginAcquisition()
-                        except PySpin.SpinnakerException as ex:
-                            print(f'Failed to begin acquisition for camera {self.camID}: {ex}')
-                            self.camq_p2read.put('done')
-                            continue
-                            
+                        cam.BeginAcquisition()
                         if ismaster:
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                             cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
@@ -260,100 +180,25 @@ class multiCam_DLC_Cam(Process):
                             bB = 0
                             pre = time.perf_counter()
                         
-                        stimThresh = int(user_cfg['stimulusThreshold'])
-                        # print(f'StimThresh: {stimThresh}')
-                        # Track consecutive timeout errors for sync loss detection
-                        consecutive_timeouts = 0
-                        max_consecutive_timeouts = 5
-                        
                         while self.aq.value > 0:
-                            
-                            
-                            ## TEST 1, start
-                            # 1. Before frame acquisition
-                            #acquisition_start = time.time() ## <-- GRANT TESTING added lines (1)
-
-                            # Add timeout and error handling to GetNextImage
-                            try:
-                                # Timeout of 1000ms - prevents indefinite blocking on sync loss
-                                image_result = cam.GetNextImage(1000)
-                                
-                                # Validate image result
-                                if image_result.IsIncomplete():
-                                    print(f'Camera {self.camID}: Incomplete image received. Status: {image_result.GetImageStatus()}')
-                                    image_result.Release()
-                                    consecutive_timeouts += 1
-                                    if consecutive_timeouts >= max_consecutive_timeouts:
-                                        print(f'Camera {self.camID}: Too many incomplete frames. Possible sync loss.')
-                                        consecutive_timeouts = 0
-                                    continue
-                                    
-                                # Reset timeout counter on successful frame
-                                consecutive_timeouts = 0
-                                
-                            except PySpin.SpinnakerException as ex:
-                                consecutive_timeouts += 1
-                                error_msg = str(ex)
-                                
-                                # Check for specific timeout/sync errors
-                                if 'Timeout' in error_msg or '-1011' in error_msg or 'EventData' in error_msg:
-                                    print(f'Camera {self.camID}: Frame acquisition timeout ({consecutive_timeouts}/{max_consecutive_timeouts}). Possible sync issue.')
-                                    
-                                    if consecutive_timeouts >= max_consecutive_timeouts:
-                                        print(f'Camera {self.camID}: CRITICAL - Persistent sync loss detected. Stopping acquisition.')
-                                        # Signal main thread about sync loss
-                                        self.aq.value = 0
-                                        break
-                                else:
-                                    print(f'Camera {self.camID}: Acquisition error: {ex}')
-                                
-                                # Continue to next iteration on error
-                                time.sleep(0.001)  # Brief pause to avoid tight error loop
-                                continue
-                            
-                            # 2. After frame acquisition
-                            #acquisition_end = time.time()  ## <-- GRANT TESTING added lines (2)
-                            #print(f"Frame acquisition time: {acquisition_end - acquisition_start:.6f} seconds")  ## <-- GRANT TESTING added lines (3)
-                            ## TEST 1, end
+                            image_result = cam.GetNextImage()
                             if record:
-                                current_stimROI_thr = np.mean(np.sum(frame,axis=0)[:5])
-                                #print(f'current_stimROI_thr: {current_stimROI_thr}')
                                 if start_time == 0:
                                     start_time = image_result.GetTimeStamp()
                                 else:
-                                    capture_duration = image_result.GetTimeStamp() - start_time
+                                    capture_duration = image_result.GetTimeStamp()-start_time
                                     start_time = image_result.GetTimeStamp()
                                     # capture_duration = capture_duration/1000/1000
                                     if not(method == 'roi' and isstim):
                                         avi.Append(image_result)
                                     elif (method == 'roi' and isstim):
                                         frame[:,:] = image_result.GetNDArray()
-                                        show_thr_cross = True
-                                        if np.mean(np.sum(frame,axis=0)[:5]) > stimThresh: # GRANT HUGHES --> CHANGE THIS VALUE TO SET THE STIMULUS THRESHOL
-                                            self.threshold_cross_frames.append(int(self.frm.value))              # 9-29-2025, New Code
-
-                                            try:
-
-                                                if self.stim_always_armed.value == 1 and not ser_always == 0:
-                                                    always_msg = user_cfg.get("stimAlwaysSerialMsg", "S")
-                                                    ser_always.write(always_msg.encode())
-                                                    self.stim_always_fired_frame.value = int(self.frm.value)  # New Code: capture trigger frame
-
-                                                    self.stim_always_armed.value = 0
-
-
-                                                if self.stim_status.value == 1 and not ser == 0:
-                                                    msg = 'x'
-                                                    ser.write(msg.encode())
-                                                    print("StimSent")
-                                                    print('/n')
-                                                    self.stim_status.value = 2
-
-                                            except Exception as e:
-                                                print(e)
-                                            np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code 
-
-                                                            
+                                        if np.mean(np.sum(frame,axis=0)[:5]) > stimThresh:
+                                            if self.stim_status.value == 1:
+                                                print('PySpin stim')
+                                                self.stim_status.value = 2
+                                    f.write("%s\n" % round(capture_duration))
+                            
                             
                             if self.aq.value == 1:
                                 frame[:,:] = image_result.GetNDArray()
@@ -369,17 +214,8 @@ class multiCam_DLC_Cam(Process):
                                 bA+=1
                                 bB+=time.perf_counter()-pre
                                 pre = time.perf_counter()
-                            # print(self.aq.value)
                             
-                            # Explicitly release image buffer to prevent memory/buffer issues
-                            try:
-                                image_result.Release()
-                            except PySpin.SpinnakerException as ex:
-                                # Buffer may already be released, continue anyway
-                                pass
-                            
-                        endMsg = self.camq.get()
-                        # print(endMsg)
+                        self.camq.get()
                         
                         if record:
                             if not(method == 'roi' and isstim):
@@ -390,37 +226,23 @@ class multiCam_DLC_Cam(Process):
                                 was = round(bB/bA*1000*1000)
                                 tried = round(1/record_frame_rate*1000*1000)
                                 print(user_cfg[camStr]['nickname'] + ' actual: ' + str(was) + ' - target: ' + str(tried))
-                        # print("Past record check")
-                        # np.save(r'C:\Users\christielab\Desktop\Grant\second_year_2024\closed_loop_testing\teset_07\threshold_crossing_framesthreshold_cross_frames.npy', np.array(self.threshold_cross_frames))   # GRANT ADDED      
-                        
-                        # End acquisition with error handling
-                        try:
-                            cam.EndAcquisition()
-                        except PySpin.SpinnakerException as ex:
-                            print(f'Camera {self.camID}: Error ending acquisition: {ex}')
-                            # Continue with cleanup anyway
-                            
+                                
+                        cam.EndAcquisition()
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
                         self.frmGrab.value = 0
                         if ismaster:
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
                             cam.LineSource.SetValue(PySpin.LineSource_FrameTriggerWait)
                             cam.LineInverter.SetValue(True)
-                        # print('Putting done into q')
                         self.camq_p2read.put('done')
                     
                         
                     elif msg == 'updateSettings':
-                        # New Code: 12-08-2025 ensure camera not acquiring before changing locked nodes
-
-                        # ser = 0
                         nodemap = cam.GetNodeMap()
                         binsize = user_cfg[camStr]['bin']
-                        cam.BinningHorizontal.SetValue(int(binsize)) # Uncommented on 12-08-25
-                        cam.BinningVertical.SetValue(int(binsize)) # Uncommented on 12-08-25
-                        ###### 12-08-25
+                        cam.BinningHorizontal.SetValue(int(binsize))
+                        cam.BinningVertical.SetValue(int(binsize))
                         
-                
                         # cam.IspEnable.SetValue(False)
                         node_acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
                         if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
@@ -502,27 +324,9 @@ class multiCam_DLC_Cam(Process):
                             roi = user_cfg[camStr]['crop']
                             if method == 'roi' and isstim:
                                 roi = user_cfg['stimXWYH']
-                                stimThresh = int(user_cfg['stimulusThreshold'])
+                                stimThresh = user_cfg['stimulusThreshold']
                                 record_frame_rate = int(record_frame_rate*user_cfg['stimRateX'])
-                                try:
-                                    stim_serial_port = user_cfg.get("stimSerialPort", "COM3")
-                                    stim_serial_baud = int(user_cfg.get("stimSerialBaud", 9600))
-                                    ser = serial.Serial(stim_serial_port, write_timeout=0.001)
-                                    print("-------Stim Serial Connected--------")
-                                except Exception as e:
-                                    print('No Stim serial')
-                                    print(e)
-                                 
-                                try:
-                                    stim_always_serial_port = user_cfg.get("stimAlwaysSerialPort", "COM5")
-                                    stim_always_serial_baud = int(user_cfg.get("stimAlwaysSerialBaud", 115200))
-                                    ser_always = serial.Serial(stim_always_serial_port, write_timeout=0.001)
-                                    print("-------Stim Always Serial Connected--------")
-                                except Exception as e:
-                                    print('No Stim-always serial')
-                                    print(e)
-                                        
-       
+                                
                             nodemap = cam.GetNodeMap()
                             
                             # Set width
