@@ -379,7 +379,7 @@ if (servoActive == true){                                  // New Code
       msgInt = -1;
     }
   }
-        //  Serial.flush();                    // Clear receive buffer.
+        //  Serial.flush();                    // Clear receive buffer".
         //  rxChar = 'P';
   if (rxChar != 'x'){
     if (msgInt >= 0){

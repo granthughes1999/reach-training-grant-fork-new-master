@@ -505,7 +505,7 @@ class multiCam_DLC_Cam(Process):
                                 stimThresh = int(user_cfg['stimulusThreshold'])
                                 record_frame_rate = int(record_frame_rate*user_cfg['stimRateX'])
                                 try:
-                                    stim_serial_port = user_cfg.get("stimSerialPort", "COM3")
+                                    stim_serial_port = user_cfg.get("stimSerialPort", "COM9")
                                     stim_serial_baud = int(user_cfg.get("stimSerialBaud", 9600))
                                     ser = serial.Serial(stim_serial_port, write_timeout=0.001)
                                     print("-------Stim Serial Connected--------")
