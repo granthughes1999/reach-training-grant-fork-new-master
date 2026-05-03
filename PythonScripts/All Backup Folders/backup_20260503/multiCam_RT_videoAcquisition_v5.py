@@ -294,7 +294,6 @@ class MainFrame(wx.Frame):
         self.early_reset_penalty_every = 5     # New Code: apply penalty every N consecutive resets
         self.early_reset_penalty_s = 30.0      # New Code: penalty duration (seconds) at home
         self.early_reset_home_pause_s = 3.0    # New Code: required pause at home before returning to mouse
-        self._com_sequence_generation = 0      # New Code: cancels queued Arduino GUI sequences
 
         self.trial_outcomes_all = []          # New Code: one entry per "trial" in your total_trial_count basis
         self.tone2_success_trials_all = []    # New Code: total-trial-index for tone-2 successes
@@ -1151,11 +1150,9 @@ class MainFrame(wx.Frame):
                 
     def autoPellet(self, event):
         if self.auto_pellet.GetValue():
-            self._cancel_queued_com_sequences()
             # start a brand new trial, not mid-delay
             self.pellet_status = 0
             self.trial_line_printed = False
-            self.early_reset_streak = 0
             # optionally reset your timers so pelletHandler doesn’t see old timestamps
             self.pellet_timing = time.time()
             self.hand_timing = None
@@ -1164,12 +1161,6 @@ class MainFrame(wx.Frame):
             while self.com.value > 0:
                 time.sleep(0.01)
         else:
-            self._cancel_queued_com_sequences()
-            self.pellet_status = 3
-            self.trial_line_printed = False
-            self.early_reset_streak = 0
-            self.hand_timing = None
-            self._pellet_ignore_until = 0
             self.com.value = 10
             while self.com.value > 0:
                 time.sleep(0.01)
@@ -1485,10 +1476,6 @@ class MainFrame(wx.Frame):
 
         wx.CallLater(poll_ms, poll)
 
-    def _cancel_queued_com_sequences(self):
-        """Cancel pending GUI-timer Arduino command sequences."""
-        self._com_sequence_generation = getattr(self, "_com_sequence_generation", 0) + 1
-
     def _queue_com_sequence(self, seq, timeout_s=3.0, poll_ms=5, on_done=None):
         """
         Non-blocking: sends com commands in order only when Arduino is idle.
@@ -1496,12 +1483,8 @@ class MainFrame(wx.Frame):
         """
         seq = list(seq)
         t0 = time.time()
-        generation = getattr(self, "_com_sequence_generation", 0)
 
         def poll():
-            if generation != getattr(self, "_com_sequence_generation", 0):
-                return
-
             # timeout safety
             if (time.time() - t0) > timeout_s:
                 return
@@ -1534,25 +1517,17 @@ class MainFrame(wx.Frame):
         """
         seq = list(seq)
         t0 = time.time()
-        generation = getattr(self, "_com_sequence_generation", 0)
         waiting = {"active": False}
 
         def poll():
-            if generation != getattr(self, "_com_sequence_generation", 0):
-                return
-
             # timeout safety
             if (time.time() - t0) > timeout_s:
                 return
 
             # finished
             if not seq:
-                # Only declare "done" after the final Arduino movement finishes.
-                if self.is_busy.value == 0 and self.com.value == 0:
-                    if callable(on_done):
-                        on_done()
-                    return
-                wx.CallLater(poll_ms, poll)
+                if callable(on_done):
+                    on_done()
                 return
 
             item = seq[0]
@@ -1564,11 +1539,8 @@ class MainFrame(wx.Frame):
                     wait_ms = int(float(item[1]) * 1000)
 
                     def _after_wait():
-                        if generation != getattr(self, "_com_sequence_generation", 0):
-                            return
                         waiting["active"] = False
-                        if seq and seq[0] is item:
-                            seq.pop(0)
+                        seq.pop(0)
                         wx.CallLater(poll_ms, poll)
 
                     wx.CallLater(wait_ms, _after_wait)
@@ -2627,8 +2599,6 @@ class MainFrame(wx.Frame):
                 self.pellet_confirm_frames = 0
 
                 def _after_reset_delivery():
-                    if not self.auto_pellet.GetValue():
-                        return
                     self._pellet_ignore_until = time.time() + 0.75
                     self.failCt = 0
                     self.hand_timing = time.time()
