@@ -498,6 +498,7 @@ class MainFrame(wx.Frame):
         self.ID_KEY_INIT = wx.NewIdRef().Id  # New Code
         self.ID_KEY_LIVE   = wx.NewIdRef().Id   # New Code
         self.ID_KEY_RECORD = wx.NewIdRef().Id   # New Code
+        self.ID_KEY_AUTO_PELLET = wx.NewIdRef().Id  # New Code
 
         self.Bind(wx.EVT_MENU, self._hotkey_home,    id=self.ID_KEY_HOME)     # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_pellet,  id=self.ID_KEY_PELLET)   # New Code
@@ -506,6 +507,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self._hotkey_init, id=self.ID_KEY_INIT)  # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_live,   id=self.ID_KEY_LIVE)    # New Code
         self.Bind(wx.EVT_MENU, self._hotkey_record, id=self.ID_KEY_RECORD)  # New Code
+        self.Bind(wx.EVT_MENU, self._hotkey_auto_pellet, id=self.ID_KEY_AUTO_PELLET)  # New Code
 
         accel = wx.AcceleratorTable([                                      # New Code
             (0, ord('H'), self.ID_KEY_HOME),                                # New Code
@@ -515,6 +517,7 @@ class MainFrame(wx.Frame):
             (0, ord('I'), self.ID_KEY_INIT),  
             (0, ord('L'), self.ID_KEY_LIVE),     # New Code
             (0, ord('V'), self.ID_KEY_RECORD),   # New Code
+            (wx.ACCEL_SHIFT, ord('P'), self.ID_KEY_AUTO_PELLET),  # New Code
         ])                                                                  # New Code
         self.SetAcceleratorTable(accel)                                    # New Code
         # --------------------------  12-14-2025  ----------------------------------------
@@ -1582,9 +1585,20 @@ class MainFrame(wx.Frame):
         self.rec.SetValue(new_state)
         self.recordCam(event)
 
+    def _hotkey_auto_pellet(self, event):
+        """
+        Toggle Automate > Pellet exactly like clicking the checkbox.
+        """
+        if not self.auto_pellet.IsEnabled():
+            return
+
+        new_state = not self.auto_pellet.GetValue()
+        self.auto_pellet.SetValue(new_state)
+        self.autoPellet(event)
+
     # -------------------------- 12-14-2025 --------------------------------------------
 
-            
+
     def setCrop(self, event):
         self.widget_panel.Enable(False)
         
