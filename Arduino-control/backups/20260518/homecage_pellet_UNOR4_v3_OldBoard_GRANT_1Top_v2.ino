@@ -125,7 +125,6 @@ unsigned long servoSetTime = millis();
 // NEW CODE
 bool servoActive = false;
 const unsigned long SPOON_HOME_HOLD_MS = 250;  // New Code: 12-17-2025 hold torque at home before detach
-bool ENABLE_SPOON_PRE_SWEEP = false;  // Set false to skip spoon sweep before loading pellet with P command
 
 // New Code — required
 
@@ -145,8 +144,7 @@ const unsigned int STEP_PULSE_HIGH_US   = 8;      // step pulse width
 const unsigned int SCOOP_RETURN_LOW_US  = 12000;  // your uniform return speed (bigger = slower)
 const unsigned int SERVO_UPDATE_EVERY_N = 4;      // update servo every N steps (reduces jitter)
 bool BARRIER_RELEASED = false;
-const int SPOON_UP_SAFE_OFFSET_US = 300;  // tune: +50 to +300 us, must not collide
-int spoonUpSafeVal = spoonHomeVal + SPOON_UP_SAFE_OFFSET_US;
+const int spoonUpSafeVal = spoonHomeVal + 700;   // tune: +50 to +300 us, must not collide
 
 unsigned long lastM_ms = 0;
 const unsigned long M_DEBOUNCE_MS = 300;
@@ -220,8 +218,7 @@ void setup(){
   }
   prevServoPos = (float)spoonHomeVal;
   myservo.writeMicroseconds(prevServoPos);
-  delay(SPOON_HOME_HOLD_MS);
-  myservo.detach();
+  delay(500);
 
 }
 
@@ -502,9 +499,7 @@ if (servoActive == true){                                  // New Code
       crackCylindoor();
       BARRIER_RELEASED = true;
       delay(200);
-      if (ENABLE_SPOON_PRE_SWEEP) {
-        conditionSpoonSweepHomeOnly();
-      }
+      conditionSpoonSweepHomeOnly();
       loadPellet();
       sendHome();
     }
@@ -1129,7 +1124,6 @@ void setSpoonServoHome(int home){
   spoonHomeVal = home;
   fullBackSpoon = spoonHomeVal-1200; // angled back ~30 degrees
   downSpoon = spoonHomeVal-800; // straight down 
-  spoonUpSafeVal = spoonHomeVal + SPOON_UP_SAFE_OFFSET_US;
 }
 
 void getBarrierServoHome(){

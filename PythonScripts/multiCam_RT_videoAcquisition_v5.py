@@ -2466,8 +2466,13 @@ class MainFrame(wx.Frame):
                             reveal_pellet = True
                             if reveal_pellet:
                                 self.early_reset_streak = 0   # New Code
-                    # Failsafe: if something goes really wrong, reset after maxWait
-                    if (time.time() - self.pellet_timing) > self.user_cfg['maxWait4Hand']:
+                    # Failsafe: if something goes really wrong, reset after maxWait.
+                    # Keep this behind the configured reveal delay so long waits do not
+                    # queue a new pellet immediately after a normal release.
+                    max_wait4hand_s = float(self.user_cfg['maxWait4Hand'])
+                    if self.auto_delay.GetValue():
+                        max_wait4hand_s = max(max_wait4hand_s, delayval + 0.5)
+                    if (not reveal_pellet) and ((time.time() - self.pellet_timing) > max_wait4hand_s):
                         getNewPellet = True
                         self.early_reset_streak = 0   # New Code: streak broken by non-early trial outcome
 
