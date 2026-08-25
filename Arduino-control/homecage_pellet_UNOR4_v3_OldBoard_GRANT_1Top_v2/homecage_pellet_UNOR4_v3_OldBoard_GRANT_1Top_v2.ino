@@ -384,7 +384,14 @@ if (servoActive == true){                                  // New Code
   }
         //  Serial.flush();                    // Clear receive buffer".
         //  rxChar = 'P';
-  if (rxChar != 'x'){
+  // if (rxChar != 'x'){
+  if (rxChar == 'A' || rxChar == 'B' || rxChar == 'C' || rxChar == 'D' ||
+    rxChar == 'E' || rxChar == 'F' || rxChar == 'G' || rxChar == 'H' ||
+    rxChar == 'I' || rxChar == 'J' || rxChar == 'K' || rxChar == 'L' ||
+    rxChar == 'M' || rxChar == 'N' || rxChar == 'O' || rxChar == 'P' ||
+    rxChar == 'Q' || rxChar == 'R' || rxChar == 'S' || rxChar == 'T' ||
+    rxChar == 'U' || rxChar == 'V' || rxChar == 'W' || rxChar == 'X' ||
+    rxChar == 'Y' || rxChar == 'Z' || rxChar == 't') {   // New Code
     if (msgInt >= 0){
       Serial.print(msgInt);
     }
@@ -597,6 +604,7 @@ if (servoActive == true){                                  // New Code
       Serial.println("available");
     }
     Serial.println('%');
+    // Serial.println("ACK");    // New Code: easier to identify than %
     rxChar = 'x';
   }
   // Serial.flush();                    // Clear receive buffer.
@@ -1146,8 +1154,8 @@ void setBarrierServoHome(int foodHome){
   eeAddress = sizeof(int32_t);
   EEPROM.put(eeAddress, foodHome);
   barrierHomeVal = foodHome;
-  foodRevealVal = barrierHomeVal+250; // straight down 
-  barrierMidVal = barrierHomeVal+100; // straight down 
+  foodRevealVal = barrierHomeVal+250; // straight down | Originally: +250
+  barrierMidVal = barrierHomeVal+250; // straight down 
 }
 
 void playTone(int freq){

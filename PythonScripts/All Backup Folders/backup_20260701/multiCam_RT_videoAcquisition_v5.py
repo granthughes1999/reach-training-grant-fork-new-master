@@ -3396,10 +3396,7 @@ class MainFrame(wx.Frame):
             self.camq_p2read[camID].get()
             self.camq[camID].close()
             self.camq_p2read[camID].close()
-            self.cam[n].join(timeout=2.0)
-            if self.cam[n].is_alive():
-                print(f"[WARN] Camera process {camID} did not exit after Release; terminating.")
-                self.cam[n].terminate()
+            self.cam[n].terminate()
         if self.com.value >= 0:
             self.ardq.put('Release')
             self.ardq_p2read.get()
@@ -3416,48 +3413,25 @@ class MainFrame(wx.Frame):
     #         self.camq[m].put('TrigOff')
 
 # NEW CODE: 01-14-2026 this is to stop the StimCam from acquiring when in RECORD mode and auto_stim is disabled
-    def startAq(self, timeout_s=5.0):
+    def startAq(self):
         """
         Start acquisition on all cameras EXCEPT the stim camera
         when in RECORD mode and auto_stim is disabled.
         """
 
-        active_slaves = []
-        active_masters = []
-
-        for camID in self.slist:
+        for camID in self.mlist + self.slist:
+            # Skip stim camera ONLY in Record mode AND stim unchecked
             if self._recording_skips_camera(camID):
                 print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
                 continue
-            active_slaves.append(camID)
+
             self.camq[camID].put('Start')
 
-        for camID in active_slaves:
-            try:
-                msg = self.camq_p2read[camID].get(timeout=timeout_s)
-                if msg != 'started':
-                    print(f"[WARN] startAq: slave cam {camID} returned {msg} instead of started")
-            except Exception as e:
-                print(f"[WARN] startAq: slave cam {camID} did not ACK Start within {timeout_s}s: {e}")
-
-        for camID in self.mlist:
-            if self._recording_skips_camera(camID):
-                print(f"[INFO] StimCam {camID} acquisition DISABLED (Record mode, stim OFF)")
+        # Trigger off only for masters that are running
+        for m in self.mlist:
+            if self._recording_skips_camera(m):
                 continue
-            active_masters.append(camID)
-            self.camq[camID].put('Start')
-
-        for camID in active_masters:
-            try:
-                msg = self.camq_p2read[camID].get(timeout=timeout_s)
-                if msg != 'started':
-                    print(f"[WARN] startAq: master cam {camID} returned {msg} instead of started")
-            except Exception as e:
-                print(f"[WARN] startAq: master cam {camID} did not ACK Start within {timeout_s}s: {e}")
-
-        # Let the master free-run only after secondary cameras have acknowledged BeginAcquisition.
-        for camID in active_masters:
-            self.camq[camID].put('TrigOff')
+            self.camq[m].put('TrigOff')
 
     # def stopAq(self):
         

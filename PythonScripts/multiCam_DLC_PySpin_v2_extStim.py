@@ -47,6 +47,9 @@ class multiCam_DLC_Cam(Process):
         ismaster = False
         record_frame_rate = 30
         user_cfg = clara.read_config()
+        sync_diagnostic_free_run_secondaries = bool(user_cfg.get('syncDiagnosticFreeRunSecondaries', False))
+        sync_free_run_stim_cam = bool(user_cfg.get('syncFreeRunStimCam', False))
+        sync_secondary_trigger_source = str(user_cfg.get('syncSecondaryTriggerSource', 'Line3'))
         key_list = list()
         for cat in user_cfg.keys():
             key_list.append(cat)
@@ -64,9 +67,66 @@ class multiCam_DLC_Cam(Process):
         method = 'none'
         ser = 0
         ser_always = 0
+        system = None
+        cam_list = None
+        cam = None
         isstim = False
         if user_cfg['stimAxes'] == camStr:
             isstim = True
+        free_run_unsynced_camera = sync_diagnostic_free_run_secondaries or (sync_free_run_stim_cam and isstim)
+
+        def release_camera_resources():
+            nonlocal system, cam_list, cam
+            if not ser == 0:
+                try:
+                    ser.close()
+                    print(ser)
+                    print("StimSerial CLosed")
+                except Exception as e:
+                    print(e)
+            if not ser_always == 0:
+                try:
+                    ser_always.close()
+                    print(ser_always)
+                    print("StimAlwaysSerial Closed")
+                except Exception as e:
+                    print(e)
+
+            try:
+                if cam.IsStreaming():
+                    print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
+                    try:
+                        cam.EndAcquisition()
+                    except:
+                        pass
+
+                try:
+                    cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+                    print(f'Camera {self.camID}: TriggerMode set to Off before release')
+                except PySpin.SpinnakerException as ex:
+                    print(f'Camera {self.camID}: Error setting TriggerMode Off during release: {ex}')
+
+                cam.DeInit()
+                print(f'Camera {self.camID}: Deinitialized successfully')
+            except PySpin.SpinnakerException as ex:
+                print(f'Camera {self.camID}: Error during deinit: {ex}')
+            except Exception as e:
+                print(f'Camera {self.camID}: Unexpected error during cleanup: {e}')
+
+            try:
+                cam = None
+                if cam_list is not None:
+                    cam_list.Clear()
+                    cam_list = None
+            except Exception as e:
+                print(f'Camera list cleanup error: {e}')
+
+            try:
+                if system is not None:
+                    system.ReleaseInstance()
+                    system = None
+            except Exception as e:
+                print(f'PySpin system release error: {e}')
         
         while True:
             try:
@@ -98,6 +158,7 @@ class multiCam_DLC_Cam(Process):
                         cam.LineSelector.SetValue(PySpin.LineSelector_Line2)
                         cam.V3_3Enable.SetValue(True)
                         cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
+                        cam.LineMode.SetValue(PySpin.LineMode_Output)
                         cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
                         cam.LineInverter.SetValue(False)
                         cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
@@ -121,54 +182,26 @@ class multiCam_DLC_Cam(Process):
                                 handling_mode.SetIntValue(handling_mode_entry.GetValue())
                                 print(f'Camera {self.camID}: Buffer handling set to NewestOnly for live acquisition')
                         
-                        cam.TriggerSource.SetValue(PySpin.TriggerSource_Line3)
-                        cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
-                        cam.TriggerActivation.SetValue(PySpin.TriggerActivation_AnyEdge)
-                        cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+                        if free_run_unsynced_camera:
+                            print(f'Camera {self.camID}: unsynced free-run enabled; hardware trigger disabled')
+                        else:
+                            trigger_source = getattr(
+                                PySpin,
+                                f'TriggerSource_{sync_secondary_trigger_source}',
+                                PySpin.TriggerSource_Line3
+                            )
+                            if not hasattr(PySpin, f'TriggerSource_{sync_secondary_trigger_source}'):
+                                print(f'Camera {self.camID}: Unknown syncSecondaryTriggerSource "{sync_secondary_trigger_source}", using Line3')
+                            cam.TriggerSource.SetValue(trigger_source)
+                            cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
+                            cam.TriggerActivation.SetValue(PySpin.TriggerActivation_RisingEdge)
+                            cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
                         self.camq_p2read.put('done')
                     elif msg == 'Release':
-                        if not ser == 0:
-                            try:
-                                ser.close()
-                                print(ser)
-                                print("StimSerial CLosed")
-                            except Exception as e:
-                                print(e)
-                        if not ser_always == 0:
-                            try:
-                                ser_always.close()
-                                print(ser_always)
-                                print("StimAlwaysSerial Closed")
-                            except Exception as e:
-                                print(e)
-                        
-                        # Improved camera cleanup sequence
-                        try:
-                            # Ensure camera is not acquiring before deinit
-                            if cam.IsStreaming():
-                                print(f'Camera {self.camID}: Still streaming during release, ending acquisition')
-                                try:
-                                    cam.EndAcquisition()
-                                except:
-                                    pass
-                            
-                            cam.DeInit()
-                            print(f'Camera {self.camID}: Deinitialized successfully')
-                        except PySpin.SpinnakerException as ex:
-                            print(f'Camera {self.camID}: Error during deinit: {ex}')
-                        except Exception as e:
-                            print(f'Camera {self.camID}: Unexpected error during cleanup: {e}')
-                        
-                        # Remove from camera list and cleanup
-                        try:
-                            for i in self.idList:
-                                cam_list.RemoveBySerial(str(i))
-                            del cam
-                        except Exception as e:
-                            print(f'Camera cleanup error: {e}')
-                        
-                        # system.ReleaseInstance() # Release instance
+                        release_camera_resources()
                         self.camq_p2read.put('done')
+                        break
                     elif msg == 'recordPrep':
                         proto_name = self.camq.get()
                         totTime = 0
@@ -211,7 +244,7 @@ class multiCam_DLC_Cam(Process):
                         
                         path_base = self.camq.get()
                         if not path_base == 'space':
-                            write_frame_rate = 30
+                            write_frame_rate = float(record_frame_rate)
                             s_node_map = cam.GetTLStreamNodeMap()
                             handling_mode = PySpin.CEnumerationPtr(s_node_map.GetNode('StreamBufferHandlingMode'))
                             if not PySpin.IsAvailable(handling_mode) or not PySpin.IsWritable(handling_mode):
@@ -228,7 +261,7 @@ class multiCam_DLC_Cam(Process):
                                 avi.Open(path_base, option)
                                 
                             # 9-29-2025 New Code
-                            f = open('%s_timestamps.txt' % path_base, 'w')  # New Code
+                            f = open('%s_timestamps.txt' % path_base, 'w', buffering=1)  # New Code
                             self.stim_npy_path = f"{path_base}_stim_frames.npy"            # New Code
                             self.threshold_cross_frames = []                                # New Code
                             np.save(self.stim_npy_path, np.empty(0, dtype=np.int32))        # New Code
@@ -241,17 +274,33 @@ class multiCam_DLC_Cam(Process):
                             capture_duration = 0
                             record = True
                             self.camq_p2read.put('done')
+                    elif msg == 'Stop':
+                        if record:
+                            try:
+                                if not(method == 'roi' and isstim) and 'avi' in locals():
+                                    avi.Close()
+                            except Exception as e:
+                                print(f'Camera {self.camID}: Error closing video on idle Stop: {e}')
+                            try:
+                                f.close()
+                            except Exception as e:
+                                print(f'Camera {self.camID}: Error closing timestamps on idle Stop: {e}')
+                            record = False
+                        self.camq_p2read.put('done')
                     elif msg == 'Start':
                         try:
                             cam.BeginAcquisition()
                         except PySpin.SpinnakerException as ex:
                             print(f'Failed to begin acquisition for camera {self.camID}: {ex}')
-                            self.camq_p2read.put('done')
+                            self.camq_p2read.put('start_failed')
                             continue
+                        self.camq_p2read.put('started')
                             
                         if ismaster:
                             cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
+                            cam.LineMode.SetValue(PySpin.LineMode_Output)
                             cam.LineSource.SetValue(PySpin.LineSource_Counter0Active)
+                            cam.LineInverter.SetValue(False)
                             self.frm.value = 0
                             self.camq.get()
                             cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
@@ -300,9 +349,7 @@ class multiCam_DLC_Cam(Process):
                                     print(f'Camera {self.camID}: Frame acquisition timeout ({consecutive_timeouts}/{max_consecutive_timeouts}). Possible sync issue.')
                                     
                                     if consecutive_timeouts >= max_consecutive_timeouts:
-                                        print(f'Camera {self.camID}: CRITICAL - Persistent sync loss detected. Stopping acquisition.')
-                                        # Signal main thread about sync loss
-                                        self.aq.value = 0
+                                        print(f'Camera {self.camID}: CRITICAL - Persistent sync loss detected. Stopping this camera acquisition only.')
                                         break
                                 else:
                                     print(f'Camera {self.camID}: Acquisition error: {ex}')
@@ -352,6 +399,7 @@ class multiCam_DLC_Cam(Process):
                                             except Exception as e:
                                                 print(e)
                                             np.save(self.stim_npy_path, np.array(self.threshold_cross_frames, dtype=np.int32))  # New Code 
+                                    f.write("%s\n" % round(capture_duration))
 
                                                             
                             
@@ -400,14 +448,27 @@ class multiCam_DLC_Cam(Process):
                             print(f'Camera {self.camID}: Error ending acquisition: {ex}')
                             # Continue with cleanup anyway
                             
-                        cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                        try:
+                            if ismaster or not free_run_unsynced_camera:
+                                cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+                            else:
+                                cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+                        except PySpin.SpinnakerException as ex:
+                            print(f'Camera {self.camID}: Error restoring trigger mode after acquisition: {ex}')
                         self.frmGrab.value = 0
                         if ismaster:
-                            cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
-                            cam.LineSource.SetValue(PySpin.LineSource_FrameTriggerWait)
-                            cam.LineInverter.SetValue(True)
+                            try:
+                                cam.LineSelector.SetValue(PySpin.LineSelector_Line1)
+                                cam.LineSource.SetValue(PySpin.LineSource_FrameTriggerWait)
+                                cam.LineInverter.SetValue(True)
+                            except PySpin.SpinnakerException as ex:
+                                print(f'Camera {self.camID}: Error restoring master line after acquisition: {ex}')
                         # print('Putting done into q')
+                        if endMsg == 'Release':
+                            release_camera_resources()
                         self.camq_p2read.put('done')
+                        if endMsg == 'Release':
+                            break
                     
                         
                     elif msg == 'updateSettings':
@@ -584,15 +645,19 @@ class multiCam_DLC_Cam(Process):
                         max_exposure = cam.ExposureTime.GetMax()
                         exposure_time_to_set = min(max_exposure, exposure_time_to_set)
                         cam.ExposureTime.SetValue(exposure_time_to_set)
-                        cam.AcquisitionFrameRateEnable.SetValue(True)
-                        
-                        # Ensure desired frame rate does not exceed the maximum
-                        max_frmrate = cam.AcquisitionFrameRate.GetMax()
-                        exposure_time_to_set = min(max_frmrate, record_frame_rate)
-                        
-                        cam.AcquisitionFrameRate.SetValue(record_frame_rate)
+                        if ismaster or free_run_unsynced_camera:
+                            cam.AcquisitionFrameRateEnable.SetValue(True)
+                            
+                            # Ensure desired frame rate does not exceed the maximum
+                            max_frmrate = cam.AcquisitionFrameRate.GetMax()
+                            record_frame_rate = min(max_frmrate, record_frame_rate)
+                            
+                            cam.AcquisitionFrameRate.SetValue(record_frame_rate)
+                            record_frame_rate = cam.AcquisitionFrameRate.GetValue()
+                        else:
+                            cam.AcquisitionFrameRateEnable.SetValue(False)
+                            
                         exposure_time_to_set = cam.ExposureTime.GetValue()
-                        record_frame_rate = cam.AcquisitionFrameRate.GetValue()
                         # max_exposure = cam.ExposureTime.GetMax()
                         # self.camq_p2read.put(exposure_time_to_set)
                         print('frame rate ' + user_cfg[camStr]['nickname'] + ' : ' + str(round(record_frame_rate)))

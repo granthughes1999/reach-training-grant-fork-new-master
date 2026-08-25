@@ -125,13 +125,14 @@ class arduinoCtrl(Process):
                         self.ardq_p2read.put('done')
                     elif msg == 'recordPrep':
                         path_base = self.ardq.get()
-                        self.events = open('%s_events.txt' % path_base, 'w')
+                        self.events = open('%s_events.txt' % path_base, 'w', buffering=1)
                         self.record = True
                         self.ardq_p2read.put('done')
                     elif msg == 'Stop':
                         if self.record:
                             self.events.close()
                             self.record = False
+                        self.ardq_p2read.put('done')
                 except:
                     exc_type, exc_obj, tb = sys.exc_info()
                     f = tb.tb_frame
